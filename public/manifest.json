@@ -1,0 +1,21 @@
+{
+  "name": "droneCalc 🇺🇦",
+  "short_name": "droneCalc",
+  "description": "Безкоштовні інженерні калькулятори для RC-авіації",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1a2035",
+  "theme_color": "#e8740c",
+  "orientation": "portrait-primary",
+  "lang": "uk",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Soldering Tools", "url": "/dashboard?tab=soldering", "description": "Паяння та reflow" },
+    { "name": "Drone Tools",     "url": "/dashboard?tab=dronetools", "description": "Польові інструменти" },
+    { "name": "Radio Horizon",   "url": "/dashboard?tab=radiohorizon", "description": "Радіогоризонт" }
+  ]
+}

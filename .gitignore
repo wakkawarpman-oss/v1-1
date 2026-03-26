@@ -1,0 +1,36 @@
+.DS_Store
+
+# dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# coverage and test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+
+# Large static assets served locally only
+# public/downloads/ — PDFs committed directly for Vercel deploy
+.vercel
+
+# Local backup archives (should not be committed)
+*.zip
