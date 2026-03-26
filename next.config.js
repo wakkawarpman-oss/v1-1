@@ -27,8 +27,10 @@ const securityHeaders = [
   },
   {
     // Next.js App Router requires 'unsafe-inline' for hydration scripts.
-    // frame-ancestors + form-action still meaningfully constrain the attack surface.
-    // worker-src and manifest-src are explicit to avoid falling through to script-src.
+    // Removing it requires nonce-based CSP via middleware — deferred.
+    // frame-ancestors + form-action + object-src 'none' still meaningfully constrain
+    // the attack surface. worker-src and manifest-src are explicit to avoid
+    // falling through to script-src.
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
@@ -39,9 +41,11 @@ const securityHeaders = [
       "connect-src 'self'",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
+      "object-src 'none'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "upgrade-insecure-requests",
     ].join('; '),
   },
 ]
