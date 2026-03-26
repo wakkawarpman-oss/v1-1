@@ -1,11 +1,11 @@
 import { Resend } from 'resend'
 import { NextRequest, NextResponse } from 'next/server'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { droneType, flightTimeActual, flightTimeCalc, wind, tempC, altM, notes } = body
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   try {
     await resend.emails.send({
