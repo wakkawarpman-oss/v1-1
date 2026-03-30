@@ -1239,6 +1239,6 @@ export type DronePrefill = {
   rotors: number
 }
 
-export const DRONE_PREFILL_KEY = 'ecalc-drone-prefill'
+export const DRONE_PREFILL_KEY = 'ecalc-drone-prefill-v2'
 
-// База даних v1.1 — 125 платформ
+// База даних v1.2 — 125 платформ
