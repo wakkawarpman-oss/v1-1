@@ -1240,3 +1240,5 @@ export type DronePrefill = {
 }
 
 export const DRONE_PREFILL_KEY = 'ecalc-drone-prefill'
+
+// База даних v1.1 — 125 платформ
