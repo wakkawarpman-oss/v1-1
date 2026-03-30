@@ -998,6 +998,68 @@ export const droneDb: Drone[] = [
     specs: 'Перший іранський MALE ударний БПЛА. 4 ракети Sadid-1. 24 год польоту. Двигун Rotax 912. Сирія, Ємен.',
     threat: 'критична',
   },
+
+  // ── ТЕСТОВІ ДРОНИ SDR-ДЕТЕКЦІЇ (Sensors 2022: DronEnd Project) ──────────
+  {
+    id: 105,
+    name: 'DJI Mavic Air',
+    type: 'професійний', origin: 'Китай',
+    range_km: 10, endurance_min: 21, payload_g: 0, weight_g: 430, speed_kmh: 68,
+    battery_mah: 2375, rotors: 4,
+    specs: '4K камера, 3-осьОВА 3D стабілізація. OcuSync+ до 10 км. Складна конструкція. Тестувався у DronEnd SDR-проєкті на частотах 2.4/5 ГГц ISM.',
+    threat: 'висока',
+  },
+  {
+    id: 106,
+    name: 'DJI Mini 2',
+    type: 'любительський', origin: 'Китай',
+    range_km: 10, endurance_min: 31, payload_g: 0, weight_g: 249, speed_kmh: 57,
+    battery_mah: 2250, rotors: 4,
+    specs: '4K 30fps. До 249 г — без реєстрації. OcuSync 2.5ГГц + 5.8ГГц. Тестувався у DronEnd SDR-проєкті на 2.4/5 ГГц. Масово використовується для розвідки.',
+    threat: 'середня',
+  },
+
+  // ── ІЗРАЇЛЬСЬКІ / ТУРЕЦЬКІ MALE (відкриті джерела 2024) ─────────────────
+  {
+    id: 107,
+    name: 'Elbit Hermes 900',
+    type: 'військовий', origin: 'Ізраїль',
+    range_km: 300, endurance_min: 1080, payload_g: 300000, weight_g: 1180000, speed_kmh: 220,
+    battery_mah: null,
+    specs: 'MALE ISR БПЛА. Двигун Rotax 914. EO/IR/SAR підвіс 300 кг. 18 год польоту. Азербайджан, Чилі, Мексика. Модифікована версія Hermes 900 StarLiner.',
+    threat: 'висока',
+  },
+  {
+    id: 108,
+    name: 'TAI Aksungur (Туреччина)',
+    type: 'військовий', origin: 'Туреччина',
+    range_km: 400, endurance_min: 2400, payload_g: 750000, weight_g: 3500000, speed_kmh: 280,
+    battery_mah: null,
+    specs: 'Турецький MALE UCAV. Два турбогвинтові двигуни. 40 год польоту. Керовані ракети MAM-L/MAM-C/UMTAS. Активний у ВМС Туреччини. SAR + SIGINT.',
+    threat: 'висока',
+  },
+
+  // ── ІРАНСЬКІ БАРРАЖУЮЧІ (відкриті джерела 2024) ─────────────────────────
+  {
+    id: 109,
+    name: 'HESA Ababil-3 (Іран)',
+    type: 'військовий', origin: 'Іран',
+    range_km: 150, endurance_min: 270, payload_g: 45000, weight_g: 83000, speed_kmh: 300,
+    battery_mah: null,
+    specs: 'Іранський тактичний БПЛА-камікадзе. Передвісник Shahed-136. БЧ 45 кг. Катапультний запуск з вантажівки. Хуті, ІРГК, Ємен. Двигун 2-тактний поршневий.',
+    threat: 'критична',
+  },
+
+  // ── ПЕРСПЕКТИВНИЙ UA (відкриті джерела 2024) ────────────────────────────
+  {
+    id: 110,
+    name: 'Bayraktar Kızılelma (Туреччина)',
+    type: 'військовий', origin: 'Туреччина',
+    range_km: 500, endurance_min: 360, payload_g: 1500000, weight_g: 6000000, speed_kmh: 800,
+    battery_mah: null,
+    specs: 'Перший турецький реактивний ударний БПЛА. Двигун AI-25TLT (Україна/Мотор Січ). AESA радар. Ракети ROKETSAN. Перший політ 12/2022. Авіаноскорегований.',
+    threat: 'висока',
+  },
 ]
 
 export const droneTypeColors: Record<DroneType, string> = {
