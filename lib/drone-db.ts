@@ -1199,6 +1199,33 @@ export const droneDb: Drone[] = [
     specs: 'Open-source nano-квадрокоптер для досліджень (Bitcraze, Швеція). Маса 27 г. LiPo 250 мАг. STM32F405 + nRF51822. Підтримка ROS2, Python, Simulink. Застосований у SkySim (2026, ArXiv 2602.01226): роєве керування LLM Gemini 3.5 для груп 3/10/30 дронів. Базова платформа для swarm-R&D.',
     threat: 'низька',
   },
+  {
+    id: 126,
+    name: 'Fiber-optic Sleeper / Gibernator (UA)',
+    type: 'FPV', origin: 'Україна',
+    range_km: 20, endurance_min: 180, payload_g: 3000, weight_g: 5000, speed_kmh: 60,
+    battery_mah: null,
+    specs: 'Українська FPV-платформа на основі волоконно-оптичного кабелю. Режим standby: дрон залишається на місці у сплячому режимі, активується за командою — повна стійкість до радіоелектронної боротьби. Застосовується для засідок на танки/техніку. Дальність визначається довжиною кабелю (до 20 км). Проект підтриманий Міноборони UA.',
+    threat: 'висока',
+  },
+  {
+    id: 127,
+    name: '$1,000 Interceptor (UA)',
+    type: 'FPV', origin: 'Україна',
+    range_km: 5, endurance_min: 15, payload_g: 500, weight_g: 800, speed_kmh: 180,
+    battery_mah: 2200,
+    specs: 'Масовий UA FPV-перехоплювач вартістю ~$1 000. Розроблений як відповідь на ворожі FPV-атаки. Привернув увагу Пентагону як модель масово доступного anti-FPV рішення. Висока маневреність, час реакції <30 с. Потенційне масове виробництво для насичення лінії фронту.',
+    threat: 'висока',
+  },
+  {
+    id: 128,
+    name: 'Deftak / OFAB-100-110-TU (UA)',
+    type: 'військовий', origin: 'Україна',
+    range_km: 80, endurance_min: 60, payload_g: 121000, weight_g: 200000, speed_kmh: 350,
+    battery_mah: null,
+    specs: 'Українська система наведення Deftak для авіабомби OFAB-100-110-TU. Маса БЧ 121 кг. Перетворює нерегульовані авіабомби на керовані високоточні боєприпаси. Дальність застосування до 80 км залежно від висоти скидання. Аналог JDAM-ER. Активно застосовується ПС ЗСУ 2025–2026.',
+    threat: 'критична',
+  },
 ]
 
 export const droneTypeColors: Record<DroneType, string> = {
@@ -1241,4 +1268,4 @@ export type DronePrefill = {
 
 export const DRONE_PREFILL_KEY = 'ecalc-drone-prefill-v2'
 
-// База даних v1.2 — 125 платформ
+// База даних v1.3 — 128 платформ
