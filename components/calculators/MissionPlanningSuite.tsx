@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Battery, Navigation, Target, MapPin } from 'lucide-react'
+import { Battery, Navigation, Target, MapPin, Wind, Crosshair } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,8 @@ import {
   type LegResult,
 } from '@/lib/mission-planning'
 import { pointOfNoReturn, type PNRResult } from '@/lib/optics'
+import { calculateInterception } from '@/lib/interception'
+import { calculateGlideFootprint } from '@/lib/glide-footprint'
 
 // ── Point of No Return (simple GS-based) ──────────────────────────────────────
 
@@ -247,6 +249,156 @@ function MultiLegFeasibilityCard() {
   )
 }
 
+// ── Interception Kinematics ────────────────────────────────────────────────────
+
+type InterceptState = {
+  targetDistanceM: number
+  targetSpeedMs: number
+  targetHeadingDeg: number
+  interceptorSpeedMs: number
+  maxFlightTimeS: number
+}
+
+const INTERCEPT_DEFAULTS: InterceptState = {
+  targetDistanceM: 2000,
+  targetSpeedMs: 20,
+  targetHeadingDeg: 90,
+  interceptorSpeedMs: 50,
+  maxFlightTimeS: 300,
+}
+
+function InterceptionCard() {
+  const [state, setState] = usePersistedState('mission.intercept', INTERCEPT_DEFAULTS)
+  const [result, setResult] = useState<ReturnType<typeof calculateInterception> | null>(null)
+
+  return (
+    <ToolCard
+      icon={<Crosshair className="h-4 w-4" />}
+      title="Перехоплення рухомої цілі"
+      description="Кінематика collision-course: кут упередження, час і дальність перехоплення."
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Дистанція до цілі, м">
+          <Input type="number" min="1" value={state.targetDistanceM}
+            onChange={(e) => setState((s) => ({ ...s, targetDistanceM: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Швидкість цілі, м/с">
+          <Input type="number" min="0" step="0.5" value={state.targetSpeedMs}
+            onChange={(e) => setState((s) => ({ ...s, targetSpeedMs: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Курс цілі відн. LOS, °">
+          <Input type="number" min="0" max="180" value={state.targetHeadingDeg}
+            onChange={(e) => setState((s) => ({ ...s, targetHeadingDeg: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Швидкість перехоплювача, м/с">
+          <Input type="number" min="1" step="0.5" value={state.interceptorSpeedMs}
+            onChange={(e) => setState((s) => ({ ...s, interceptorSpeedMs: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Ресурс польоту, с">
+          <Input type="number" min="1" value={state.maxFlightTimeS}
+            onChange={(e) => setState((s) => ({ ...s, maxFlightTimeS: Number(e.target.value) }))} />
+        </Field>
+      </div>
+      <Button onClick={() => setResult(calculateInterception(state))}>Розрахувати</Button>
+      {!result && <div className="text-xs text-ecalc-muted">Введіть параметри та натисніть «Розрахувати»</div>}
+      {result && !result.isPossible && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-sm text-red-400">
+          ✗ Перехоплення неможливе — перевірте швидкості та кут.
+        </div>
+      )}
+      {result?.isPossible && (
+        <>
+          <ResultBox copyValue={String(result.leadAngleDeg)}>
+            Кут упередження φ: <span className="font-semibold text-ecalc-navy">{result.leadAngleDeg}°</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.timeToInterceptS)}>
+            Час перехоплення: <span className="font-semibold text-ecalc-navy">{result.timeToInterceptS} с</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.interceptDistanceM)}>
+            Дистанція перехоплювача: <span className="font-semibold text-ecalc-navy">{result.interceptDistanceM} м</span>
+          </ResultBox>
+          <div className={`rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${result.batterySufficient ? 'border-ecalc-green/30 bg-ecalc-green/10 text-ecalc-green' : 'border-red-500/30 bg-red-500/10 text-red-400'}`}>
+            {result.batterySufficient ? '✓ Ресурс достатній' : '✗ Не вистачить ресурсу'}
+          </div>
+        </>
+      )}
+    </ToolCard>
+  )
+}
+
+// ── Emergency Glide Footprint ─────────────────────────────────────────────────
+
+type GlideState = {
+  altitudeAglM: number
+  bestGlideSpeedMs: number
+  maxLdRatio: number
+  windSpeedMs: number
+}
+
+const GLIDE_DEFAULTS: GlideState = {
+  altitudeAglM: 150,
+  bestGlideSpeedMs: 18,
+  maxLdRatio: 12,
+  windSpeedMs: 5,
+}
+
+function GlideFootprintCard() {
+  const [state, setState] = usePersistedState('mission.glide', GLIDE_DEFAULTS)
+  const [result, setResult] = useState<ReturnType<typeof calculateGlideFootprint> | null>(null)
+
+  function calculate() {
+    try { setResult(calculateGlideFootprint(state)) } catch { setResult(null) }
+  }
+
+  return (
+    <ToolCard
+      icon={<Wind className="h-4 w-4" />}
+      title="Аварійне планування (відмова двигуна)"
+      description="Площа досяжності при відмові двигуна: радіус планування з вітром і проти вітру."
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Висота AGL, м">
+          <Input type="number" min="1" value={state.altitudeAglM}
+            onChange={(e) => setState((s) => ({ ...s, altitudeAglM: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Швидкість планування V_bg, м/с">
+          <Input type="number" min="1" step="0.5" value={state.bestGlideSpeedMs}
+            onChange={(e) => setState((s) => ({ ...s, bestGlideSpeedMs: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Аеродинамічна якість L/D">
+          <Input type="number" min="1" step="0.5" value={state.maxLdRatio}
+            onChange={(e) => setState((s) => ({ ...s, maxLdRatio: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Швидкість вітру, м/с">
+          <Input type="number" min="0" step="0.5" value={state.windSpeedMs}
+            onChange={(e) => setState((s) => ({ ...s, windSpeedMs: Number(e.target.value) }))} />
+        </Field>
+      </div>
+      <Button onClick={calculate}>Розрахувати</Button>
+      {!result && <div className="text-xs text-ecalc-muted">Введіть параметри та натисніть «Розрахувати»</div>}
+      {result && (
+        <>
+          <ResultBox copyValue={String(result.radiusNoWindM)}>
+            Радіус (без вітру): <span className="font-semibold text-ecalc-navy">{result.radiusNoWindM} м</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.maxDistanceDownwindM)}>
+            Дальність за вітром: <span className="font-semibold text-ecalc-navy">{result.maxDistanceDownwindM} м</span>
+          </ResultBox>
+          <ResultBox copyValue={String(Math.max(0, result.maxDistanceUpwindM))}>
+            Дальність проти вітру: <span className="font-semibold text-ecalc-navy">{result.maxDistanceUpwindM > 0 ? `${result.maxDistanceUpwindM} м` : '— зноситься'}</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.maxTimeAloftS)}>
+            Час до землі: <span className="font-semibold text-ecalc-navy">{result.maxTimeAloftS} с</span>
+          </ResultBox>
+          <div className={`rounded-xl border px-3.5 py-2.5 text-sm font-semibold ${result.canHoldPosition ? 'border-ecalc-green/30 bg-ecalc-green/10 text-ecalc-green' : 'border-amber-500/30 bg-amber-500/10 text-amber-400'}`}>
+            {result.canHoldPosition ? '✓ Може утримувати позицію проти вітру' : '⚠ Повністю зноситься вітром'}
+          </div>
+        </>
+      )}
+    </ToolCard>
+  )
+}
+
 export function MissionPlanningSuite() {
   return (
     <section className="space-y-6">
@@ -289,6 +441,8 @@ export function MissionPlanningSuite() {
         <PNRCard />
         <WindAdjustedPNRCard />
         <MultiLegFeasibilityCard />
+        <InterceptionCard />
+        <GlideFootprintCard />
       </div>
     </section>
   )

@@ -1,10 +1,11 @@
 'use client'
 
+import { useState, type ReactNode } from 'react'
 import { useDashboardNav } from '@/hooks/useDashboardNav'
 import {
   Activity, BarChart2, Compass, Cpu, Eye, Flame, Gauge,
   Link2, Map, Navigation, Plane, Radio, Ruler, ShieldAlert, ShieldCheck, Target,
-  Thermometer, Volume2, Wind, Wrench, Zap, Battery,
+  Thermometer, Volume2, Wind, Wrench, Zap, Battery, ChevronDown, FlaskConical,
 } from 'lucide-react'
 import { AeroNavigationSuite } from '@/components/calculators/AeroNavigationSuite'
 import { AircraftGeometrySuite } from '@/components/calculators/AircraftGeometrySuite'
@@ -86,6 +87,182 @@ const tabs: TabDef[] = tabGroups.flatMap((g) => g.tabs)
 
 function isDashboardTab(value: string | null): value is string {
   return tabs.some((tab) => tab.value === value)
+}
+
+// ── FAQ accordion ─────────────────────────────────────────────────────────────
+
+type AccuracyRow = { group: 'A' | 'B' | 'C' | 'D'; metric: string; accuracy: string; basis: string }
+
+const ACCURACY_TABLE: AccuracyRow[] = [
+  { group: 'A', metric: 'Щільність повітря',             accuracy: '±0.3%',   basis: 'ISA (ICAO Doc 7488) аналітичні формули' },
+  { group: 'A', metric: 'Радіогоризонт',                 accuracy: '±2–3%',   basis: 'Геометрія (ITU-R P.526), k-factor 4/3' },
+  { group: 'A', metric: 'Напруга під навантаженням',     accuracy: '±2%',     basis: 'Peukert + V-sag (Rint model), 17 еталонів' },
+  { group: 'A', metric: 'Статична тяга (CT відомий)',    accuracy: '±3–5%',   basis: 'CT = T/ρn²D⁴, AIAA 2012, UIUC OLS' },
+  { group: 'A', metric: 'Швидкість зриву (airfoil-db)',  accuracy: '±3–5%',   basis: '3 airfoil-db cd0/oswald, UIUC/NACA Re-полари' },
+  { group: 'A', metric: 'FSPL / бюджет лінку',          accuracy: '±1–2%',   basis: 'Friis (1946), дБ-модель LOS' },
+  { group: 'B', metric: 'Ендюранс мультиротора',         accuracy: '±7–10%',  basis: 'Altmann motor model + Peukert Kp, 80 моторів' },
+  { group: 'B', metric: 'Потужність приводу',            accuracy: '±5–10%',  basis: 'back-EMF + advance ratio, η_esc ≈ 0.92' },
+  { group: 'B', metric: 'Ендюранс фіксованого крила',   accuracy: '±8–12%',  basis: 'Бреге-Доналдсон, спрощений CD(CL)' },
+  { group: 'B', metric: 'GSD / охоплення камери',       accuracy: '±5%',     basis: 'Thin lens, сенсор-пресети Sony/DJI/custom' },
+  { group: 'C', metric: 'Аеродинамічний опір CD₀',      accuracy: '±15–25%', basis: 'Wetted-area методика, без CFD' },
+  { group: 'C', metric: 'FPV тяга в польоті',           accuracy: '±15–20%', basis: 'CT(J) з prop-db, 33 пропелери; без Mach-корекції' },
+  { group: 'C', metric: 'Акустичний OASPL',             accuracy: '±3–6 дБ', basis: 'Gutin-Lighthill, без турбулентного шуму' },
+  { group: 'D', metric: 'Температура ESC',              accuracy: '±30–50%', basis: 'Теплова ємність без реальної конвекції' },
+  { group: 'D', metric: 'CG зі складним компонуванням', accuracy: '±20–40%', basis: 'Спрощена 3-масова модель' },
+]
+
+const GROUP_COLORS: Record<AccuracyRow['group'], string> = {
+  A: 'bg-ecalc-green/20 border-ecalc-green/40 text-ecalc-green',
+  B: 'bg-amber-500/20 border-amber-500/40 text-amber-400',
+  C: 'bg-ecalc-orange/20 border-ecalc-orange/40 text-ecalc-orange',
+  D: 'bg-red-500/20 border-red-500/40 text-red-400',
+}
+
+type FaqItem = { q: string; content: ReactNode }
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null)
+
+  const faqItems: FaqItem[] = [
+    {
+      q: 'Що таке droneCalc і для кого він?',
+      content: (
+        <div className="space-y-2.5">
+          <p>
+            droneCalc — безкоштовний браузерний інструмент для інженерних розрахунків у галузі
+            безпілотних літальних апаратів. Розрахунки виконуються{' '}
+            <strong className="text-white/80">локально у браузері</strong> — без сервера,
+            без реєстрації, без трекерів. Підтримує офлайн-режим (PWA).
+          </p>
+          <p>
+            Цільова аудиторія: RC-авіамоделісти, інженери-розробники БПЛА, студенти
+            аерокосмічних спеціальностей, технічні спеціалісти UAV-підрозділів.
+          </p>
+        </div>
+      ),
+    },
+    {
+      q: 'Яка точність розрахунків?',
+      content: (
+        <div className="space-y-3">
+          <p>Метрики розбиті на 4 групи за рівнем точності:</p>
+          <div className="flex flex-wrap gap-2 text-[10px]">
+            {(['A','B','C','D'] as const).map((g) => (
+              <span key={g} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-bold ${GROUP_COLORS[g]}`}>
+                {g} {g === 'A' ? '< ±5%' : g === 'B' ? '±5–15%' : g === 'C' ? '±15–30%' : '> ±30%'}
+              </span>
+            ))}
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-ecalc-border/60">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-ecalc-border/60 bg-white/3">
+                  <th className="px-2.5 py-2 text-left font-semibold text-white/40 w-10">Гр.</th>
+                  <th className="px-2.5 py-2 text-left font-semibold text-white/40">Метрика</th>
+                  <th className="px-2.5 py-2 text-left font-semibold text-white/40 whitespace-nowrap">Точність</th>
+                  <th className="px-2.5 py-2 text-left font-semibold text-white/40 hidden sm:table-cell">Основа</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ecalc-border/40">
+                {ACCURACY_TABLE.map((row, i) => (
+                  <tr key={i} className="hover:bg-white/2">
+                    <td className="px-2.5 py-2">
+                      <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-bold ${GROUP_COLORS[row.group]}`}>
+                        {row.group}
+                      </span>
+                    </td>
+                    <td className="px-2.5 py-2 text-white/75">{row.metric}</td>
+                    <td className="px-2.5 py-2 font-semibold text-white/90 whitespace-nowrap">{row.accuracy}</td>
+                    <td className="px-2.5 py-2 text-white/40 hidden sm:table-cell">{row.basis}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ),
+    },
+    {
+      q: 'Що таке UIUC Prop DB і чому це важливо?',
+      content: (
+        <p>
+          База аеродинамічних коефіцієнтів пропелерів Університету Іллінойсу (33 типи пропелерів).
+          Калібровочні коефіцієнти Ct = 0.067 та Cp = 0.064 отримані методом найменших квадратів (OLS).
+          Без калібрування похибка статичної тяги сягала б <strong className="text-white/80">35%</strong>.
+          Модель Altmann (back-EMF + advance ratio J) охоплює 80 моторів і дозволяє розраховувати
+          тягу та ефективність у польоті.
+        </p>
+      ),
+    },
+    {
+      q: 'Чи враховуються атмосферні умови?',
+      content: (
+        <p>
+          Так. Щільність повітря — за ISA + вологість (ISO 2533 / ICAO Doc 7488).
+          Вітер на висоті — ISO 4354 (Log Wind Profile, 8 класів рельєфу).
+          Density altitude, cloud base, EDR turbulence — у вкладці Environment.
+          Для висот &gt; 3000 м обов&apos;язково вказуйте elevation у perfCalc.
+        </p>
+      ),
+    },
+    {
+      q: 'Чи можна використовувати для реальних місій?',
+      content: (
+        <p>
+          <strong className="text-red-400">Ні.</strong> Інструмент має виключно довідковий та
+          освітній характер. Аналітичні моделі не враховують деградацію батареї в умовах
+          реальної температури, механічний знос, відхилення від ISA, перешкоди рельєфу або
+          помилки GPS. Для операційного планування необхідна верифікація фактичними льотними
+          даними та сертифіковане ПЗ.
+        </p>
+      ),
+    },
+    {
+      q: 'Як зберігаються дані? Чи є збір телеметрії?',
+      content: (
+        <p>
+          Стан усіх калькуляторів зберігається виключно у <strong className="text-white/80">localStorage</strong> вашого браузера.
+          Жодні дані не передаються на сервер автоматично. Форма телеметрії (вкладка Environment)
+          є опціональною — надсилає лише якщо ви вручну натиснете «Відправити».
+          Без Google Analytics, без зовнішніх шрифтів, без трекерів. PWA-режим дозволяє
+          повністю офлайн-розрахунки після першого завантаження.
+        </p>
+      ),
+    },
+  ]
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="mb-3 flex items-center gap-3">
+        <span className="inline-flex items-center rounded-full bg-ecalc-orange px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
+          FAQ
+        </span>
+        <span className="text-sm text-white/50">Часті запитання про інструмент</span>
+      </div>
+
+      {/* Items */}
+      <div className="space-y-2">
+        {faqItems.map((item, i) => (
+          <div key={i} className="rounded-2xl border border-ecalc-border bg-[#161b27] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left text-sm font-semibold text-white/85 hover:text-white hover:bg-white/3 transition-colors"
+            >
+              <span className="leading-snug">{item.q}</span>
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform duration-200 ${open === i ? 'rotate-180' : ''}`} />
+            </button>
+            {open === i && (
+              <div className="px-5 pb-5 text-[12.5px] text-white/55 leading-relaxed border-t border-ecalc-border/40 pt-3.5">
+                {item.content}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 type CalculatorDashboardProps = Readonly<{ activeTab?: string }>
@@ -352,6 +529,31 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
                     </button>
                   ))}
                 </div>
+
+                {/* Accuracy stats */}
+                <div className="rounded-2xl border border-ecalc-border bg-[#161b27] p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-ecalc-orange" />
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Точність моделей</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { value: '569',  label: 'Unit тестів',        sub: '20 тест-файлів' },
+                      { value: '17',   label: 'Еталонних пресетів', sub: '4 калькулятори' },
+                      { value: '<5%',  label: 'Похибка Ct/Cp',      sub: 'UIUC Prop DB' },
+                      { value: '128',  label: 'Дронів у БД',        sub: 'ТТХ платформ' },
+                    ].map(({ value, label, sub }) => (
+                      <div key={label} className="rounded-xl border border-ecalc-border/60 bg-ecalc-lightbg/30 px-3 py-2.5 text-center">
+                        <div className="text-xl font-bold text-ecalc-orange tabular-nums">{value}</div>
+                        <div className="mt-0.5 text-[11px] font-semibold text-white/70">{label}</div>
+                        <div className="text-[10px] text-white/35">{sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FAQ accordion */}
+                <FaqSection />
 
                 {/* Disclaimer */}
                 <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/50 leading-relaxed">
