@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useDashboardNav } from '@/hooks/useDashboardNav'
 import {
   Activity, BarChart2, Compass, Cpu, Eye, Flame, Gauge,
   Link2, Map, Navigation, Plane, Radio, Ruler, ShieldAlert, ShieldCheck, Target,
-  Thermometer, Volume2, Wind, Wrench, Zap, Battery,
+  Thermometer, Volume2, Wind, Wrench, Zap, Battery, ChevronDown, FlaskConical,
 } from 'lucide-react'
 import { AeroNavigationSuite } from '@/components/calculators/AeroNavigationSuite'
 import { AircraftGeometrySuite } from '@/components/calculators/AircraftGeometrySuite'
@@ -86,6 +87,69 @@ const tabs: TabDef[] = tabGroups.flatMap((g) => g.tabs)
 
 function isDashboardTab(value: string | null): value is string {
   return tabs.some((tab) => tab.value === value)
+}
+
+// ── FAQ accordion ─────────────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+  {
+    q: 'Яка точність розрахунків perfCalc та xcopterCalc?',
+    a: 'Похибка порівняно з еталонними пресетами: тяга ±3–5%, ендюранс ±4–7%, швидкість зриву ±2%. Ключові параметри: Altmann motor model (back-EMF + advance ratio, 80 моторів), Peukert + voltage sag для LiPo, Reynolds correction при Re < 300k.',
+  },
+  {
+    q: 'Що таке UIUC Prop DB і як він застосовується?',
+    a: 'База аеродинамічних коефіцієнтів пропелерів Університету Іллінойсу (33 пропелери). Калібровочні коефіцієнти Ct (0.067) та Cp (0.064) отримані методом найменших квадратів (OLS) за цими даними. Без калібрування похибка тяги сягала б 35%.',
+  },
+  {
+    q: 'Чи враховуються умови навколишнього середовища?',
+    a: 'Так: повітряна маса — за ISA + вологість (ISO 2533), вітер на висоті — ISO 4354 (Log Wind Profile), щільність повітря — з урахуванням температури, тиску, вологості. Для висот > 3000 м рекомендується враховувати elevation.',
+  },
+  {
+    q: 'Чи можна використовувати для планування реальних місій?',
+    a: 'Інструмент має виключно довідковий та освітній характер. Моделі — аналітичні, не враховують реальну деградацію батареї, механічний знос або похибки GPS. Для реальних операцій необхідна верифікація фактичними льотними даними.',
+  },
+  {
+    q: 'Як працює Calculator Johnson Criteria (DRI)?',
+    a: 'Критерії Джонсона (1958, NATO STANAG 4586) визначають мінімальну кількість пікселів сенсора на критичний розмір цілі: Виявлення ≥1.5 пкс, Розпізнавання ≥6 пкс, Ідентифікація ≥12 пкс. Формула: Range = (GSD × f_mm × W_px) / W_sensor_mm.',
+  },
+  {
+    q: 'Як розраховується перехоплення рухомої цілі?',
+    a: 'Метод Collision Course (постійний кут LOS). Вирішується трикутник швидкостей: V_i·sin(φ) = V_t·sin(θ), V_c = V_i·cos(φ) − V_t·cos(θ). Якщо closing speed ≤ 0 або sinPhi > 1 — перехоплення геометрично неможливе.',
+  },
+  {
+    q: 'Як зберігаються дані? Чи є збір телеметрії?',
+    a: 'Стан калькуляторів зберігається лише у localStorage вашого браузера. Телеметрія (опційна) надсилається на dronecalc@pm.me лише якщо ви вручну заповните форму. Без Google Analytics, без зовнішніх трекерів. PWA-режим — розрахунки офлайн.',
+  },
+] as const
+
+function FaqSection() {
+  const [open, setOpen] = useState<number | null>(null)
+  return (
+    <div className="rounded-2xl border border-ecalc-border bg-[#161b27] overflow-hidden">
+      <div className="px-4 py-3 border-b border-ecalc-border/60">
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">FAQ — Часті запитання</span>
+      </div>
+      <div className="divide-y divide-ecalc-border/40">
+        {FAQ_ITEMS.map((item, i) => (
+          <div key={i}>
+            <button
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left text-sm font-medium text-white/80 hover:text-white hover:bg-white/3 transition-colors"
+            >
+              <span className="leading-snug">{item.q}</span>
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 text-ecalc-orange transition-transform duration-200 ${open === i ? 'rotate-180' : ''}`} />
+            </button>
+            {open === i && (
+              <div className="px-4 pb-4 text-xs text-white/55 leading-relaxed">
+                {item.a}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 type CalculatorDashboardProps = Readonly<{ activeTab?: string }>
@@ -352,6 +416,31 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
                     </button>
                   ))}
                 </div>
+
+                {/* Accuracy stats */}
+                <div className="rounded-2xl border border-ecalc-border bg-[#161b27] p-4">
+                  <div className="mb-3 flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-ecalc-orange" />
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Точність моделей</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { value: '569',  label: 'Unit тестів',        sub: '20 тест-файлів' },
+                      { value: '17',   label: 'Еталонних пресетів', sub: '4 калькулятори' },
+                      { value: '<5%',  label: 'Похибка Ct/Cp',      sub: 'UIUC Prop DB' },
+                      { value: '128',  label: 'Дронів у БД',        sub: 'ТТХ платформ' },
+                    ].map(({ value, label, sub }) => (
+                      <div key={label} className="rounded-xl border border-ecalc-border/60 bg-ecalc-lightbg/30 px-3 py-2.5 text-center">
+                        <div className="text-xl font-bold text-ecalc-orange tabular-nums">{value}</div>
+                        <div className="mt-0.5 text-[11px] font-semibold text-white/70">{label}</div>
+                        <div className="text-[10px] text-white/35">{sub}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FAQ accordion */}
+                <FaqSection />
 
                 {/* Disclaimer */}
                 <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-white/50 leading-relaxed">
