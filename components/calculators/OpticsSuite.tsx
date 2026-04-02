@@ -15,6 +15,7 @@ import {
   detailedLinkBudget,
   type FootprintResult, type LinkBudgetResult,
 } from '@/lib/optics'
+import { calculateJohnsonCriteria } from '@/lib/optics-dri'
 
 // ── GSD & FOV Calculator ──────────────────────────────────────────────────────
 
@@ -441,6 +442,76 @@ function DetailedLinkBudgetCard() {
   )
 }
 
+// ── DRI — Johnson Criteria ────────────────────────────────────────────────────
+
+type DRIState = {
+  sensorWidthMm: number
+  focalLengthMm: number
+  imageWidthPixels: number
+  targetCriticalDimensionM: number
+}
+
+const DRI_DEFAULTS: DRIState = {
+  sensorWidthMm: 6.17,
+  focalLengthMm: 4.5,
+  imageWidthPixels: 4056,
+  targetCriticalDimensionM: 0.5,
+}
+
+function DRICard() {
+  const [state, setState] = usePersistedState('optics.dri', DRI_DEFAULTS)
+  const [result, setResult] = useState<ReturnType<typeof calculateJohnsonCriteria> | null>(null)
+
+  function calculate() {
+    setResult(calculateJohnsonCriteria(state))
+  }
+
+  return (
+    <ToolCard
+      icon={<Crosshair className="h-4 w-4" />}
+      title="DRI — критерії Джонсона"
+      description="Максимальна дальність виявлення / розпізнавання / ідентифікації цілі (Johnson 1958, NATO STANAG 4586)."
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Ширина сенсора, мм">
+          <Input type="number" step="0.01" min="0.1" value={state.sensorWidthMm}
+            onChange={(e) => setState((s) => ({ ...s, sensorWidthMm: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Фокусна відстань, мм">
+          <Input type="number" step="0.1" min="0.1" value={state.focalLengthMm}
+            onChange={(e) => setState((s) => ({ ...s, focalLengthMm: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Ширина знімка, пкс">
+          <Input type="number" min="1" value={state.imageWidthPixels}
+            onChange={(e) => setState((s) => ({ ...s, imageWidthPixels: Number(e.target.value) }))} />
+        </Field>
+        <Field label="Критичний розмір цілі, м">
+          <Input type="number" step="0.1" min="0.1" value={state.targetCriticalDimensionM}
+            onChange={(e) => setState((s) => ({ ...s, targetCriticalDimensionM: Number(e.target.value) }))} />
+        </Field>
+      </div>
+      <Button onClick={calculate}>Розрахувати</Button>
+      {!result && <CalcEmptyState />}
+      {result && (
+        <>
+          <ResultBox copyValue={String(result.detectionMaxDistanceM)}>
+            Виявлення (≥1.5 пкс): <span className="font-semibold text-ecalc-navy">{(result.detectionMaxDistanceM / 1000).toFixed(2)} км</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.recognitionMaxDistanceM)}>
+            Розпізнавання (≥6 пкс): <span className="font-semibold text-ecalc-navy">{(result.recognitionMaxDistanceM / 1000).toFixed(2)} км</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.identificationMaxDistanceM)}>
+            Ідентифікація (≥12 пкс): <span className="font-semibold text-ecalc-navy">{(result.identificationMaxDistanceM / 1000).toFixed(2)} км</span>
+          </ResultBox>
+          <ResultBox copyValue={String(result.gsdDetectionM)}>
+            GSD (виявл.): <span className="font-semibold text-ecalc-navy">{(result.gsdDetectionM * 100).toFixed(1)} см/пкс</span>
+          </ResultBox>
+        </>
+      )}
+    </ToolCard>
+  )
+}
+
 export function OpticsSuite() {
   return (
     <section className="space-y-6">
@@ -448,7 +519,7 @@ export function OpticsSuite() {
         <CardHeader>
           <CardTitle>Оптика та РЕБ / Радіо</CardTitle>
           <CardDescription>
-            Розвідувальна оптика (GSD, FOV, охоплення),
+            Розвідувальна оптика (GSD, FOV, охоплення), DRI-дальність (критерії Джонсона),
             бюджет лінії зв&apos;язку (FSPL), зони Френеля, довжини антен, матриця ІМД.
             Усі моделі — аналітичні, в умовах відкритого горизонту LOS.
           </CardDescription>
@@ -457,6 +528,7 @@ export function OpticsSuite() {
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <GSDCard />
+        <DRICard />
         <LinkBudgetCard />
         <DetailedLinkBudgetCard />
         <FresnelCard />

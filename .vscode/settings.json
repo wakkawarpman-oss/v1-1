@@ -2,5 +2,8 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "css.lint.unknownAtRules": "ignore",
     "scss.lint.unknownAtRules": "ignore",
-    "java.import.gradle.java.home": "/opt/homebrew/Cellar/openjdk@21/21.0.10/libexec/openjdk.jdk/Contents/Home"
+    "java.import.gradle.java.home": "/opt/homebrew/Cellar/openjdk@21/21.0.10/libexec/openjdk.jdk/Contents/Home",
+    "chat.tools.terminal.autoApprove": {
+        "npm run -s lint": true
+    }
 }
