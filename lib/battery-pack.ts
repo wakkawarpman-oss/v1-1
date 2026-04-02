@@ -2,74 +2,16 @@
 // Models a Li-ion/LiPo pack as ideal voltage source + series internal resistance.
 // Each parallel branch shares current equally; series cells sum voltage drops.
 
+import { CELL_DB, type CellSpec } from '@/lib/battery-db'
+
+export type { CellSpec }
+
+// Re-export unified cell database for backward compatibility
+export const CELL_DATABASE = CELL_DB
+
 function isPositive(value: number) {
   return Number.isFinite(value) && value > 0
 }
-
-// Known 21700 cell specs — keep sorted by model name for display
-export type CellSpec = {
-  id: string
-  label: string
-  capacityMah: number
-  nominalVoltageV: number
-  maxContinuousA: number
-  riMOhms: number   // DC internal resistance in milli-ohms
-  weightG: number
-  notes: string
-}
-
-export const CELL_DATABASE: CellSpec[] = [
-  {
-    id: 'molicel-p42a',
-    label: 'Molicel P42A',
-    capacityMah: 4200,
-    nominalVoltageV: 3.6,
-    maxContinuousA: 45,
-    riMOhms: 13,
-    weightG: 68,
-    notes: 'Галузевий стандарт: висока потужність + термічна стабільність',
-  },
-  {
-    id: 'molicel-p45b',
-    label: 'Molicel P45B',
-    capacityMah: 4500,
-    nominalVoltageV: 3.6,
-    maxContinuousA: 45,
-    riMOhms: 9,
-    weightG: 70,
-    notes: 'Ультранизький DCIR, зарядка до 3C — ідеал для ударних платформ',
-  },
-  {
-    id: 'samsung-40t',
-    label: 'Samsung 40T',
-    capacityMah: 4000,
-    nominalVoltageV: 3.6,
-    maxContinuousA: 35,
-    riMOhms: 13,
-    weightG: 67,
-    notes: 'Перевірена стабільність під навантаженням',
-  },
-  {
-    id: 'samsung-50s',
-    label: 'Samsung 50S',
-    capacityMah: 5000,
-    nominalVoltageV: 3.6,
-    maxContinuousA: 45,
-    riMOhms: 15,
-    weightG: 72,
-    notes: 'Найвища щільність енергії 250 Wh/kg — оптимально для дальніх маршрутів',
-  },
-  {
-    id: 'custom',
-    label: 'Власна комірка',
-    capacityMah: 3000,
-    nominalVoltageV: 3.7,
-    maxContinuousA: 20,
-    riMOhms: 20,
-    weightG: 65,
-    notes: 'Ручне введення параметрів',
-  },
-]
 
 export type BatteryPackResult = {
   capacityAh: number
