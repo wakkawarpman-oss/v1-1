@@ -7,6 +7,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Only deploy from the canonical repo — skip forks
+    if: github.repository == 'dronecalc/v1'
     steps:
       - uses: actions/checkout@v4
 
