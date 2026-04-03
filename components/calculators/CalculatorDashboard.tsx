@@ -365,7 +365,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
           <button type="button" onClick={() => handleTabChange('windprofile')}
             className="rounded-xl border border-sky-500/20 bg-sky-500/5 px-3 py-2.5 text-left transition-colors hover:border-sky-500/40 hover:bg-sky-500/10 cursor-pointer">
             <div className="mb-1 flex items-center justify-between gap-1">
-              <span className="inline-flex items-center rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400 whitespace-nowrap">Log Wind Profile</span>
+              <span className="inline-flex items-center rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400 whitespace-nowrap">Профіль вітру</span>
               <span className="text-[10px] text-sky-400/60">→</span>
             </div>
             <p className="text-[11px] text-white/55 leading-relaxed">ISO 4354 — швидкість вітру на висоті за 8 класами рельєфу.</p>
@@ -374,7 +374,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
           <button type="button" onClick={() => handleTabChange('slipstream')}
             className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3 py-2.5 text-left transition-colors hover:border-indigo-500/40 hover:bg-indigo-500/10 cursor-pointer">
             <div className="mb-1 flex items-center justify-between gap-1">
-              <span className="inline-flex items-center rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-400 whitespace-nowrap">Slipstream Drag</span>
+              <span className="inline-flex items-center rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-400 whitespace-nowrap">Слід гвинта</span>
               <span className="text-[10px] text-indigo-400/60">→</span>
             </div>
             <p className="text-[11px] text-white/55 leading-relaxed">Actuator disk — пропвош БПЛА і додатковий аеродинамічний опір.</p>
@@ -383,7 +383,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
           <button type="button" onClick={() => handleTabChange('thermalcooling')}
             className="rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2.5 text-left transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 cursor-pointer">
             <div className="mb-1 flex items-center justify-between gap-1">
-              <span className="inline-flex items-center rounded-full bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-400 whitespace-nowrap">Thermal Cooling</span>
+              <span className="inline-flex items-center rounded-full bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-rose-400 whitespace-nowrap">Охолодження Ram-Air</span>
               <span className="text-[10px] text-rose-400/60">→</span>
             </div>
             <p className="text-[11px] text-white/55 leading-relaxed">Ram-air охолодження ESC/мотору — площа повітрозабірника за ΔT.</p>
@@ -392,7 +392,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
           <button type="button" onClick={() => handleTabChange('acoustic')}
             className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2.5 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/10 cursor-pointer">
             <div className="mb-1 flex items-center justify-between gap-1">
-              <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-400 whitespace-nowrap">Acoustic OASPL</span>
+              <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-400 whitespace-nowrap">Акустика OASPL</span>
               <span className="text-[10px] text-amber-400/60">→</span>
             </div>
             <p className="text-[11px] text-white/55 leading-relaxed">Шум пропелера в дБ(A) — лопаті, Mach, відстань, мультиротор.</p>
@@ -464,30 +464,38 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg sm:text-xl">🛫 Калькулятори електроприводів</CardTitle>
                 <CardDescription className="text-xs sm:text-sm leading-relaxed">
-                  24 розділи: аеродинаміка, навігація, пропульсія, електроніка, RF та планування місії. Безкоштовно, без реєстрації.
+                  25 розділів: аеродинаміка, навігація, пропульсія, електроніка, RF, польові рішення та планування місії. Безкоштовно, без реєстрації.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 px-3 sm:px-6">
-                {/* Mission planning highlight */}
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('mission')}
-                  className="group w-full rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border border-ecalc-orange/30 bg-gradient-to-r from-ecalc-orange/10 to-ecalc-navy/5"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ecalc-orange/15 text-ecalc-orange">
-                      <Navigation className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ecalc-orange">Нове</div>
-                      <div className="text-sm font-bold text-ecalc-navy leading-snug">Центр планування місії</div>
-                      <div className="mt-0.5 text-xs text-ecalc-muted">Ендюранс, тактичний радіус, бюджет маршруту з урахуванням резерву</div>
-                    </div>
-                    <svg className="h-5 w-5 flex-shrink-0 text-ecalc-orange/50 group-hover:text-ecalc-orange transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
+                {/* Highlighted new tabs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {([
+                    { tab: 'mission',  icon: Navigation, label: 'Центр планування місії',  desc: 'Ендюранс, тактичний радіус, бюджет маршруту з урахуванням резерву' },
+                    { tab: 'fieldops', icon: ShieldCheck, label: 'Польові рішення',        desc: 'Допуск до вильоту, точка Bingo RTL, інтегральна оцінка місії (MRI)' },
+                  ] as const).map(({ tab, icon: Icon, label, desc }) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => handleTabChange(tab)}
+                      className="group w-full rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border border-ecalc-orange/30 bg-gradient-to-r from-ecalc-orange/10 to-ecalc-navy/5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-ecalc-orange/15 text-ecalc-orange">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ecalc-orange">Нове</div>
+                          <div className="text-sm font-bold text-ecalc-navy leading-snug">{label}</div>
+                          <div className="mt-0.5 text-xs text-ecalc-muted">{desc}</div>
+                        </div>
+                        <svg className="h-5 w-5 flex-shrink-0 text-ecalc-orange/50 group-hover:text-ecalc-orange transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))}
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {[

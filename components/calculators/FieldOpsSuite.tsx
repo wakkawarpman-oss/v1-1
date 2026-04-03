@@ -108,7 +108,7 @@ function PreflightGate() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field id="windGust"     label="Порив вітру (м/с)"      value={inp.windGust}      step={0.5} min={0} onChange={(v) => set('windGust', v)} />
           <Field id="windLimit"    label="Ліміт БПЛА (м/с)"       value={inp.windLimit}     step={0.5} min={0} onChange={(v) => set('windLimit', v)} />
-          <Field id="linkMarginDb" label="Link margin (дБ)"        value={inp.linkMarginDb}  step={1}   onChange={(v) => set('linkMarginDb', v)} />
+          <Field id="linkMarginDb" label="Запас лінку (дБ)"         value={inp.linkMarginDb}  step={1}   onChange={(v) => set('linkMarginDb', v)} />
           <Field id="packetLoss"   label="Packet loss (%)"         value={inp.packetLossPct} step={1} min={0} onChange={(v) => set('packetLossPct', v)} />
           <Field id="gpsSat"       label="GPS супутники"           value={inp.gpsSatCount}   step={1} min={0} onChange={(v) => set('gpsSatCount', v)} />
         </div>
@@ -154,7 +154,7 @@ function BingoRtl() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bingo RTL — Остання точка повернення</CardTitle>
+        <CardTitle>Bingo RTL — Точка повернення</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -166,21 +166,21 @@ function BingoRtl() {
           <Field id="windPenalty"  label="Штраф вітру (%)"            value={inp.windPenaltyPct}      step={5}   min={0} onChange={(v) => set('windPenaltyPct', v)} hint="Зниження зворотної швидкості через зустрічний вітер" />
         </div>
 
-        <div className="rounded-xl border border-ecalc-border/60 bg-ecalc-lightbg/30 p-4 space-y-3">
+        <div className={`rounded-xl border p-4 space-y-3 ${result.bingoNow ? 'border-red-500/40 bg-red-500/8' : 'border-ecalc-border/60 bg-ecalc-lightbg/30'}`}>
           {result.bingoNow ? (
             <div className="flex items-center gap-2 text-red-400 font-bold text-base">
-              <Battery className="w-5 h-5" />
-              BINGO! Розворот ЗАРАЗ
+              <Battery className="w-5 h-5 animate-pulse" />
+              BINGO — Розворот ЗАРАЗ
             </div>
           ) : (
             <div className="flex items-center gap-2 text-green-400 font-semibold text-base">
               <Clock className="w-5 h-5" />
-              Можна летіти ще {turnMin}:{String(turnRemSec).padStart(2, '0')} хв
+              Залишилось {turnMin}:{String(turnRemSec).padStart(2, '0')} хв до точки Bingo
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-xs text-ecalc-muted">
-            <div>Потрібно: <span className="text-ecalc-text font-mono">{result.requiredMah.toFixed(0)} мАг</span></div>
-            <div>Доступно: <span className="text-ecalc-text font-mono">{result.availableMah.toFixed(0)} мАг</span></div>
+            <div>Потрібно повернутись: <span className="text-ecalc-text font-mono">{result.requiredMah.toFixed(0)} мАг</span></div>
+            <div>Залишок батареї: <span className="text-ecalc-text font-mono">{result.availableMah.toFixed(0)} мАг</span></div>
           </div>
         </div>
       </CardContent>
@@ -211,22 +211,22 @@ function MriPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mission Risk Index — Інтегральна оцінка місії</CardTitle>
+        <CardTitle>Індекс ризику місії (MRI)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="batWarn">Батарея</Label>
+            <Label htmlFor="batWarn">Стан батареї</Label>
             <select
               id="batWarn"
               value={inp.batteryWarning}
               onChange={(e) => set('batteryWarning', e.target.value as MissionRiskInput['batteryWarning'])}
-              className="w-full rounded-md border border-ecalc-border bg-ecalc-lightbg px-3 py-2 text-sm text-ecalc-text"
+              className="w-full rounded-md border border-ecalc-border bg-ecalc-lightbg px-3 py-2 text-sm text-ecalc-text focus:outline-none focus:ring-1 focus:ring-ecalc-orange/60"
             >
               {batOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
-          <Field id="mriLink"    label="Link margin (дБ)"       value={inp.linkMarginDb}       step={1}   onChange={(v) => set('linkMarginDb', v)} />
+          <Field id="mriLink"    label="Запас лінку (дБ)"       value={inp.linkMarginDb}       step={1}   onChange={(v) => set('linkMarginDb', v)} />
           <Field id="mriTherm"   label="Тепловий запас (%)"     value={inp.thermalHeadroomPct} step={5} min={0} onChange={(v) => set('thermalHeadroomPct', v)} />
           <Field id="mriWind"    label="Штраф вітру (%)"        value={inp.windPenaltyPct ?? 0}step={5} min={0} onChange={(v) => set('windPenaltyPct', v)} />
         </div>
@@ -263,7 +263,7 @@ export function FieldOpsSuite() {
             Field Ops — Польові інструменти
           </h3>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/72">
-            Три P0-інструменти для оперативних рішень: Preflight Gate (допуск до вильоту з оцінкою score та reasons), Bingo RTL (остання точка повернення за батареєю та вітром), Mission Risk Index (інтегральна оцінка 0–100 з класом safe/caution/unsafe).
+            Три інструменти для прийняття рішень у полі: оцінка готовності до вильоту з поясненням причин, розрахунок точки Bingo RTL за батареєю і вітром, інтегральна оцінка ризику місії 0–100.
           </p>
         </div>
       </div>
