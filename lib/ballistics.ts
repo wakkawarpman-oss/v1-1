@@ -32,14 +32,15 @@ export function dropPointDrag(params: {
   massKg: number
   diameterM: number
   cdValue?: number
+  airDensityKgm3?: number
 }): DropResult {
-  const { altitudeM, speedKmh, headwindKmh, massKg, diameterM, cdValue = 0.47 } = params
+  const { altitudeM, speedKmh, headwindKmh, massKg, diameterM, cdValue = 0.47, airDensityKgm3 = RHO_SEA } = params
   if (altitudeM <= 0 || massKg <= 0 || diameterM <= 0) {
     return { horizontalM: 0, timeS: 0, impactSpeedMs: 0, releasePointM: 0 }
   }
 
   const area = Math.PI * (diameterM / 2) ** 2
-  const dragCoeff = 0.5 * cdValue * RHO_SEA * area
+  const dragCoeff = 0.5 * cdValue * airDensityKgm3 * area
 
   let vx = (speedKmh - headwindKmh) / 3.6
   let vz = 0
@@ -221,7 +222,7 @@ export function bombDrop(params: {
   airDensity?: number
 }): { timeS: number; forwardM: number; impactSpeedMs: number; totalSpeedMs: number; vxImpactMs: number } {
   const { altitudeM, platformSpeedMs, windMs, massKg, dragCoeff, crossSectionM2, airDensity = 1.225 } = params
-  const g = 9.81
+  const g = GRAVITY
   const dt = 0.02  // standardised with dropPointDrag (was 0.05)
   let y = altitudeM, vy = 0
   let x = 0, vx = platformSpeedMs - windMs
@@ -301,6 +302,8 @@ export interface Drop3DInput {
   frictionCoeff?: number
   /** Fuze delay after first impact, s (0 = instant) */
   fuzeDelayS?: number
+  /** Air density kg/m³ (default 1.225 = ISA sea level). Pass altitude-adjusted value for precision. */
+  airDensityKgm3?: number
 }
 
 export interface Drop3DResult {
@@ -338,6 +341,7 @@ export function drop3D(inp: Drop3DInput): Drop3DResult {
     cor = 0,
     frictionCoeff = 0.35,
     fuzeDelayS = 0,
+    airDensityKgm3 = RHO_SEA,
   } = inp
 
   const cdTumble = cdTumbleIn ?? cdStable * 1.8
@@ -387,7 +391,7 @@ export function drop3D(inp: Drop3DInput): Drop3DResult {
 
     const vRel = Math.sqrt(vRelX ** 2 + vRelY ** 2 + vRelZ ** 2)
     if (vRel > 0) {
-      const kDrag = (0.5 * RHO_SEA * cd * area * vRel) / massKg
+      const kDrag = (0.5 * airDensityKgm3 * cd * area * vRel) / massKg
       vx -= kDrag * vRelX * dt
       vy -= kDrag * vRelY * dt
       vz -= kDrag * vRelZ * dt
@@ -449,7 +453,7 @@ export function drop3D(inp: Drop3DInput): Drop3DResult {
     while (z >= 0 && tPost < fuzeDelayS) {
       const vB = Math.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
       if (vB > 0) {
-        const kDrag = (0.5 * RHO_SEA * cdStable * area * vB) / massKg
+        const kDrag = (0.5 * airDensityKgm3 * cdStable * area * vB) / massKg
         vx -= kDrag * vx * dtB
         vy -= kDrag * vy * dtB
         vz -= kDrag * vz * dtB
