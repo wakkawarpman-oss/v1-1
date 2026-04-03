@@ -308,7 +308,9 @@ export function availablePowerAtSpeedW(params: {
  * μ_ref = 1.789e-5 Pa·s at 288.15 K
  */
 export function dynamicViscosity(temperatureC: number): number {
-  const T = temperatureC + 273.15
+  // Sutherland law is undefined for non-physical absolute temperatures.
+  // Clamp to 1 K to keep downstream Reynolds computations finite.
+  const T = Math.max(1, temperatureC + 273.15)
   const T_ref = 288.15
   const mu_ref = 1.789e-5
   const S = 110.4
@@ -367,6 +369,9 @@ export function peukertCapacityMah(capacityMah: number, currentA: number, peuker
 }
 
 export function perfSummary(input: PerfCalcInput) {
+  const safeMotorCount = Number.isFinite(input.motorCount) && input.motorCount > 0
+    ? input.motorCount
+    : 1
   const density = airDensity(input.elevationM, input.temperatureC)
   const weightN = input.weightKg * 9.81
   const wingAreaM2 = input.wingAreaDm2 / 100
@@ -402,19 +407,19 @@ export function perfSummary(input: PerfCalcInput) {
 
   // Computed or user-provided static operating point
   const effectiveRpm = motor
-    ? motorStaticRpm(motor, batteryVoltage, cp, density, input.propDiameterIn) * input.motorCount
+    ? motorStaticRpm(motor, batteryVoltage, cp, density, input.propDiameterIn) * safeMotorCount
     : input.rpm
   const effectiveStaticThrustG = motor
     ? staticThrustFromCt(ct, density,
         motorStaticRpm(motor, batteryVoltage, cp, density, input.propDiameterIn),
-        input.propDiameterIn) * input.motorCount
+        input.propDiameterIn) * safeMotorCount
     : input.staticThrustG
   const effectiveDrivePowerW = motor
     ? motorShaftPowerW(motor, batteryVoltage,
         motorStaticRpm(motor, batteryVoltage, cp, density, input.propDiameterIn))
     : input.drivePowerW
 
-  const pitchSpeed = pitchSpeedKmh(effectiveRpm / (motor ? input.motorCount : 1), input.propPitchIn)
+  const pitchSpeed = pitchSpeedKmh(effectiveRpm / (motor ? safeMotorCount : 1), input.propPitchIn)
   // ─────────────────────────────────────────────────────────────────────────
 
   // Re-corrected CL_max: two-pass iteration for accuracy at very low Re.
@@ -457,12 +462,12 @@ export function perfSummary(input: PerfCalcInput) {
     const reqPower = parasitePower + inducedPower
 
     const thrustDynamicG = motor
-      ? dynamicThrustAltmann(effectiveStaticThrustG, effectiveRpm / input.motorCount, speedMs, input.propDiameterIn) * input.motorCount
+      ? dynamicThrustAltmann(effectiveStaticThrustG, effectiveRpm / safeMotorCount, speedMs, input.propDiameterIn) * safeMotorCount
       : dynamicThrustG(effectiveStaticThrustG, speedKmh, pitchSpeed)
     const thrustDynamicN = thrustDynamicG / 1000 * 9.81
 
     const powerAvailable = motor
-      ? availablePowerAltmann(motor, batteryVoltage, cp, ct, density, input.propDiameterIn, speedMs) * input.motorCount
+      ? availablePowerAltmann(motor, batteryVoltage, cp, ct, density, input.propDiameterIn, speedMs) * safeMotorCount
       : availablePowerAtSpeedW({
           drivePowerW: effectiveDrivePowerW,
           speedKmh,
@@ -544,7 +549,7 @@ export function perfSummary(input: PerfCalcInput) {
     aspectRatio: ar,
     pitchSpeed,
     stallSpeedKmh: stallMs * 3.6,
-    thrustToWeight: effectiveStaticThrustG / (input.weightKg * 1000),
+    thrustToWeight: effectiveStaticThrustG / (Math.max(input.weightKg, 1e-6) * 1000),
     bestRangeKmh: carsonKmh,
     bestEfficiencyWhKm: bestEfficiencyPoint.efficiencyWhKm,
     maxRocMs: bestRocPoint.roc,

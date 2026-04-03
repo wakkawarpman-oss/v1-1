@@ -570,6 +570,11 @@ describe('dynamicViscosity', () => {
   it('increases with temperature (hot air is more viscous)', () => {
     expect(dynamicViscosity(40)).toBeGreaterThan(dynamicViscosity(0))
   })
+  it('remains finite for non-physical temperature input', () => {
+    const mu = dynamicViscosity(-400)
+    expect(Number.isFinite(mu)).toBe(true)
+    expect(mu).toBeGreaterThan(0)
+  })
 })
 
 describe('reynoldsNumber', () => {
@@ -656,6 +661,12 @@ describe('perfSummary — Reynolds polars', () => {
     const s = perfSummary(baseInput)
     const ar = (baseInput.wingSpanMm / 1000) ** 2 / (baseInput.wingAreaDm2 / 100)
     expect(s.oswaldAuto).toBeCloseTo(estimateOswald(ar), 4)
+  })
+  it('keeps outputs finite when motorCount is zero in persisted state', () => {
+    const s = perfSummary({ ...baseInput, motorCount: 0 })
+    expect(Number.isFinite(s.pitchSpeed)).toBe(true)
+    expect(Number.isFinite(s.maxRocMs)).toBe(true)
+    expect(Number.isFinite(s.thrustToWeight)).toBe(true)
   })
 })
 

@@ -53,7 +53,7 @@ export function PerfCalc() {
       ...current,
       [key]: (OPTIONAL_PARAM_KEYS as ReadonlyArray<string>).includes(key)
         ? (Number.isFinite(value) && value > 0 ? value : undefined)
-        : (Number.isFinite(value) ? value : 0),
+        : (Number.isFinite(value) ? value : current[key]),
     }))
   }
 

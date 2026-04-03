@@ -13,6 +13,12 @@ function isPositive(value: number) {
   return Number.isFinite(value) && value > 0
 }
 
+function positiveOrFallback(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+}
+
 export type BatteryPackResult = {
   capacityAh: number
   nominalVoltageV: number
@@ -40,7 +46,16 @@ export function batteryPack(params: {
   if (!isPositive(s) || !isPositive(p) || !Number.isFinite(loadCurrentA)) return null
 
   const base = CELL_DATABASE.find((c) => c.id === cellId) ?? CELL_DATABASE[0]
-  const cell: CellSpec = { ...base, ...(cellId === 'custom' ? customCell : {}) }
+  const cell: CellSpec = cellId === 'custom'
+    ? {
+        ...base,
+        capacityMah: positiveOrFallback(customCell?.capacityMah, base.capacityMah),
+        nominalVoltageV: positiveOrFallback(customCell?.nominalVoltageV, base.nominalVoltageV),
+        maxContinuousA: positiveOrFallback(customCell?.maxContinuousA, base.maxContinuousA),
+        riMOhms: positiveOrFallback(customCell?.riMOhms, base.riMOhms),
+        weightG: positiveOrFallback(customCell?.weightG, base.weightG),
+      }
+    : base
 
   const capacityAh = (p * cell.capacityMah) / 1000
   const nominalVoltageV = s * cell.nominalVoltageV

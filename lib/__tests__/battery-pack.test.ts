@@ -76,6 +76,28 @@ describe('batteryPack', () => {
     expect(result!.capacityAh).toBeCloseTo(5.0, 3)
   })
 
+  it('sanitizes invalid custom cell values with safe fallback', () => {
+    const base = CELL_DATABASE.find((cell) => cell.id === 'custom') ?? CELL_DATABASE[0]
+    const result = batteryPack({
+      s: 2,
+      p: 1,
+      cellId: 'custom',
+      customCell: {
+        capacityMah: -100,
+        nominalVoltageV: 0,
+        maxContinuousA: Number.NaN,
+        riMOhms: -5,
+        weightG: 0,
+      },
+      loadCurrentA: 5,
+    })
+
+    expect(result).not.toBeNull()
+    expect(result!.capacityAh).toBeCloseTo(base.capacityMah / 1000, 6)
+    expect(result!.nominalVoltageV).toBeCloseTo(2 * base.nominalVoltageV, 6)
+    expect(Number.isFinite(result!.voltageUnderLoadV)).toBe(true)
+  })
+
   it('falls back to first cell for unknown cellId', () => {
     const result = batteryPack({ s: 4, p: 1, cellId: 'unknown-cell', loadCurrentA: 10 })
     expect(result).not.toBeNull()
