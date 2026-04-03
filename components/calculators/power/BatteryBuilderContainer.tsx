@@ -5,6 +5,7 @@ import { CalcEmptyState } from '@/components/calculators/CalculatorToolPrimitive
 import { BatterySelectorView } from '@/components/calculators/power/BatterySelectorView'
 import { PowerStatsView } from '@/components/calculators/power/PowerStatsView'
 import { usePersistedState } from '@/hooks/usePersistedState'
+import { useIntegrationState } from '@/hooks/useIntegrationState'
 import {
   batteryPack,
   packMaxCurrent,
@@ -23,6 +24,7 @@ import {
   switchBatteryChemistry,
   type BatteryDraft,
 } from '@/lib/power-contracts'
+import { estimateFlightTimeAt80DoD } from '@/lib/integration-contracts'
 
 type BatteryBuilderState = {
   batteryType: 'liion-cell' | 'lipo-pack'
@@ -71,6 +73,7 @@ const DEFAULT_DRAFT: BatteryDraft = {
 export function BatteryBuilderContainer({ onPackBuilt }: { onPackBuilt: (capacityAh: number, voltageV: number) => void }) {
   const [state, setState] = usePersistedState('batterypack.builder', DEFAULT_STATE)
   const [result, setResult] = useState<BatteryPackResult | null>(null)
+  const integration = useIntegrationState()
 
   const selectedCell = useMemo(
     () => CELL_DB.find((c) => c.id === state.cellId) ?? CELL_DB[0],
@@ -217,7 +220,19 @@ export function BatteryBuilderContainer({ onPackBuilt }: { onPackBuilt: (capacit
     })
 
     setResult(nextResult)
-    if (nextResult) onPackBuilt(nextResult.capacityAh, nextResult.nominalVoltageV)
+    if (nextResult) {
+      onPackBuilt(nextResult.capacityAh, nextResult.nominalVoltageV)
+      integration.patch({
+        batteryCells: safeInput.sCount,
+        batteryCellWeightG: nextResult.weightG / Math.max(1, safeInput.sCount),
+        batteryCapacityMah: nextResult.capacityAh * 1000,
+        batteryVoltageV: nextResult.nominalVoltageV,
+        flightTime80Min: estimateFlightTimeAt80DoD({
+          batteryCapacityMah: nextResult.capacityAh * 1000,
+          hoverCurrentA: integration.state.hoverCurrentA,
+        }),
+      })
+    }
   }
 
   const peukertK = state.batteryType === 'lipo-pack'

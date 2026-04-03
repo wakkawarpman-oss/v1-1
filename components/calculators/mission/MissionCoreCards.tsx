@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Battery, Navigation, Target, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, formatToolNumber, ResultBox, ToolCard } from '@/components/calculators/CalculatorToolPrimitives'
 import { usePersistedState } from '@/hooks/usePersistedState'
+import { useIntegrationState } from '@/hooks/useIntegrationState'
 import {
   missionEndurance,
   routeBatteryBudget,
@@ -33,6 +34,15 @@ const PNR_DEFAULTS: PNRState = {
 export function PNRCard() {
   const [state, setState] = usePersistedState('mission.pnr', PNR_DEFAULTS)
   const [result, setResult] = useState<PNRResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    if (integration.state.flightTime80Min <= 0) return
+    setState((prev) => {
+      if (Math.abs(prev.totalEnduranceMin - integration.state.flightTime80Min) < 0.2) return prev
+      return { ...prev, totalEnduranceMin: integration.state.flightTime80Min }
+    })
+  }, [integration.state.flightTime80Min, setState])
 
   function calculate() {
     const safeEnduranceHours = Math.max(0, state.totalEnduranceMin - state.reserveMin) / 60
@@ -80,6 +90,19 @@ export function EnduranceCard() {
     reservePct: 20,
   })
   const [endResult, setEndResult] = useState<EnduranceResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    setEndState((prev) => {
+      const next = {
+        ...prev,
+        batteryMah: integration.state.batteryCapacityMah,
+        avgCurrentA: integration.state.hoverCurrentA,
+      }
+      if (next.batteryMah === prev.batteryMah && Math.abs(next.avgCurrentA - prev.avgCurrentA) < 0.05) return prev
+      return next
+    })
+  }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setEndState])
 
   return (
     <ToolCard icon={<Battery className="h-4 w-4" />} title="Ендюранс та дальність" description="Час польоту, максимальна дальність та тактичний радіус дії.">
@@ -125,6 +148,17 @@ export function RouteBatteryBudgetCard() {
     reservePct: 20,
   })
   const [routeResult, setRouteResult] = useState<RouteBudgetResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    setRouteState((prev) => {
+      const next = {
+        ...prev,
+        batteryMah: integration.state.batteryCapacityMah,
+      }
+      return next.batteryMah === prev.batteryMah ? prev : next
+    })
+  }, [integration.state.batteryCapacityMah, setRouteState])
 
   return (
     <ToolCard icon={<Navigation className="h-4 w-4" />} title="Бюджет маршруту" description="Чи вистачить батареї на маршрут заданої довжини із резервом.">
@@ -182,6 +216,24 @@ export function TacticalRadiusCard() {
     loiterMin: 5,
   })
   const [tacResult, setTacResult] = useState<TacticalRadiusResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    setTacState((prev) => {
+      const next = {
+        ...prev,
+        batteryMah: integration.state.batteryCapacityMah,
+        hoverCurrentA: integration.state.hoverCurrentA,
+      }
+      if (
+        next.batteryMah === prev.batteryMah &&
+        Math.abs(next.hoverCurrentA - prev.hoverCurrentA) < 0.05
+      ) {
+        return prev
+      }
+      return next
+    })
+  }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setTacState])
 
   return (
     <ToolCard icon={<Target className="h-4 w-4" />} title="Тактичний радіус" description="Максимальна відстань від бази із зависанням над ціллю та резервом.">

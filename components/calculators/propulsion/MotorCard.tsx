@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { MotorSpec } from '@/lib/motor-db'
@@ -14,7 +15,7 @@ type MotorCardProps = {
   readonly onAutoSuggestChange: (enabled: boolean) => void
 }
 
-export function MotorCard(props: MotorCardProps) {
+function MotorCardInner(props: MotorCardProps) {
   const {
     draft,
     motorQuery,
@@ -91,3 +92,5 @@ export function MotorCard(props: MotorCardProps) {
     </div>
   )
 }
+
+export const MotorCard = memo(MotorCardInner)

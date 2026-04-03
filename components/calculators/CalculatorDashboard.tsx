@@ -1,94 +1,51 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useState, type ReactNode } from 'react'
 import { useDashboardNav } from '@/hooks/useDashboardNav'
-import {
-  Activity, BarChart2, Compass, Cpu, Eye, Flame, Gauge,
-  Link2, Map, Navigation, Plane, Radio, Ruler, ShieldAlert, ShieldCheck, Target,
-  Thermometer, Volume2, Wind, Wrench, Zap, Battery, ChevronDown, FlaskConical,
-} from 'lucide-react'
-import { AeroNavigationSuite } from '@/components/calculators/AeroNavigationSuite'
-import { AircraftGeometrySuite } from '@/components/calculators/AircraftGeometrySuite'
-import { AviationEngineeringSuite } from '@/components/calculators/AviationEngineeringSuite'
-import { AvionicsElectronicsSuite } from '@/components/calculators/AvionicsElectronicsSuite'
-import { CoordinateSystemsSuite } from '@/components/calculators/CoordinateSystemsSuite'
-import { ExternalFactorsSuite } from '@/components/calculators/ExternalFactorsSuite'
-import { FrequencyToolsSuite } from '@/components/calculators/FrequencyToolsSuite'
-import { MissionPlanningSuite } from '@/components/calculators/MissionPlanningSuite'
-import { PerfCalc } from '@/components/calculators/PerfCalc'
-import { RadioHorizonSuite } from '@/components/calculators/RadioHorizonSuite'
-import { SolderingSuite } from '@/components/calculators/SolderingSuite'
-import { CGCalcBasic, PropCalcBasic, XcopterCalcBasic } from '@/components/calculators/BasicCalcs'
-import { DroneEngineerToolset } from '@/components/calculators/DroneEngineerToolset'
-import { BallisticsSuite } from '@/components/calculators/BallisticsSuite'
-import { BatteryPackSuite } from '@/components/calculators/BatteryPackSuite'
-import { OpticsSuite } from '@/components/calculators/OpticsSuite'
-import { DroneDatabase } from '@/components/calculators/DroneDatabase'
-import { EwJammingSuite } from '@/components/calculators/EwJammingSuite'
-import { FieldOpsSuite } from '@/components/calculators/FieldOpsSuite'
-import { WindProfileSuite } from '@/components/calculators/WindProfileSuite'
-import { ThermalCoolingSuite } from '@/components/calculators/ThermalCoolingSuite'
-import { AcousticSuite } from '@/components/calculators/AcousticSuite'
-import { SlipstreamSuite } from '@/components/calculators/SlipstreamSuite'
+import { ChevronDown, FlaskConical, Link2, Navigation, ShieldCheck } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  dashboardTabGroups,
+  dashboardTabs,
+  type DashboardTabDef,
+} from '@/components/calculators/dashboard/dashboard.registry'
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-import { Database } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+const panelLoading = () => (
+  <div className="rounded-xl border border-ecalc-border bg-ecalc-lightbg px-4 py-3 text-sm text-ecalc-muted">
+    Завантаження розділу...
+  </div>
+)
 
-type TabDef = { value: string; label: string; shortLabel: string; icon: LucideIcon }
-type TabGroup = { group: string | null; tabs: TabDef[] }
-
-// ── Tab definitions with sidebar grouping ────────────────────────────────────
-const tabGroups: TabGroup[] = [
-  { group: null, tabs: [
-    { value: 'dashboard', label: 'Головна', shortLabel: 'Головна', icon: Gauge },
-  ]},
-  { group: 'Характеристики', tabs: [
-    { value: 'perfcalc',    label: 'Продуктивність літака',    shortLabel: 'Продуктивність', icon: BarChart2 },
-    { value: 'xcoptercalc', label: 'Мультиротор',              shortLabel: 'Мультиротор',    icon: Cpu },
-    { value: 'propcalc',    label: 'Мотор і пропелер',         shortLabel: 'Мотор',          icon: Plane },
-    { value: 'cgcalc',      label: 'Центр ваги',               shortLabel: 'Центр ваги',     icon: Target },
-  ]},
-  { group: 'Планування місії', tabs: [
-    { value: 'mission',   label: 'Центр планування місії',  shortLabel: 'Місія',          icon: Navigation },
-    { value: 'fieldops',  label: 'Польові рішення',         shortLabel: 'Польові',        icon: ShieldCheck },
-    { value: 'aeronav',   label: 'Аеронавігація',           shortLabel: 'Аеронавігація',  icon: Compass },
-    { value: 'coords',    label: 'Системи координат',       shortLabel: 'Координати',     icon: Map },
-  ]},
-  { group: 'Інженерія', tabs: [
-    { value: 'engineering',   label: 'Авіаційна інженерія',     shortLabel: 'Інженерія',   icon: Wrench },
-    { value: 'avionics',      label: 'Авіоніка і електроніка',  shortLabel: 'Авіоніка',    icon: Zap },
-    { value: 'geometry',      label: 'Геометрія літака',        shortLabel: 'Геометрія',   icon: Ruler },
-    { value: 'environment',   label: 'Зовнішні фактори',        shortLabel: 'Середовище',  icon: Wind },
-    { value: 'windprofile',   label: 'Профіль вітру (ISO 4354)',shortLabel: 'Вітер',       icon: Wind },
-    { value: 'thermalcooling',label: 'Ram-Air охолодження',     shortLabel: 'Охолодження', icon: Thermometer },
-    { value: 'acoustic',      label: 'Акустичний підпис',       shortLabel: 'Акустика',    icon: Volume2 },
-    { value: 'slipstream',    label: 'Slipstream — Слід гвинта',shortLabel: 'Слід гвинта', icon: Wind },
-  ]},
-  { group: 'Зв\u2019язок і радіо', tabs: [
-    { value: 'radiohorizon', label: 'Радіогоризонт і радар',    shortLabel: 'Радіогориз.',  icon: Radio },
-    { value: 'frequency',    label: 'Частотні інструменти',     shortLabel: 'Частоти',      icon: Activity },
-    { value: 'optics',       label: 'Оптика, GSD та радіоканал',shortLabel: 'Оптика',       icon: Eye },
-    { value: 'ew',           label: 'РЕБ — Стійкість лінку',   shortLabel: 'РЕБ',          icon: ShieldAlert },
-  ]},
-  { group: 'Інструменти', tabs: [
-    { value: 'dronetools',  label: 'Польові інструменти',       shortLabel: 'Польові інстр.',icon: Wrench },
-    { value: 'soldering',   label: 'Паяння та монтаж',          shortLabel: 'Паяння',        icon: Flame },
-    { value: 'ballistics',  label: 'Балістика скидання',        shortLabel: 'Балістика',     icon: Target },
-    { value: 'battery',     label: 'Конструктор батарейного паку', shortLabel: 'Батарея',   icon: Battery },
-  ]},
-  { group: 'База знань', tabs: [
-    { value: 'dronedb',   label: 'База дронів — ТТХ',          shortLabel: 'База дронів',   icon: Database },
-  ]},
-]
-
-const tabs: TabDef[] = tabGroups.flatMap((g) => g.tabs)
-
-function isDashboardTab(value: string | null): value is string {
-  return tabs.some((tab) => tab.value === value)
+const suiteRegistry: Record<string, React.ComponentType> = {
+  mission: dynamic(() => import('@/components/calculators/MissionPlanningSuite').then((m) => m.MissionPlanningSuite), { loading: panelLoading }),
+  fieldops: dynamic(() => import('@/components/calculators/FieldOpsSuite').then((m) => m.FieldOpsSuite), { loading: panelLoading }),
+  dronedb: dynamic(() => import('@/components/calculators/DroneDatabase').then((m) => m.DroneDatabase), { loading: panelLoading }),
+  perfcalc: dynamic(() => import('@/components/calculators/PerfCalc').then((m) => m.PerfCalc), { loading: panelLoading }),
+  propcalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.PropCalcBasic), { loading: panelLoading }),
+  xcoptercalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.XcopterCalcBasic), { loading: panelLoading }),
+  cgcalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.CGCalcBasic), { loading: panelLoading }),
+  aeronav: dynamic(() => import('@/components/calculators/AeroNavigationSuite').then((m) => m.AeroNavigationSuite), { loading: panelLoading }),
+  engineering: dynamic(() => import('@/components/calculators/AviationEngineeringSuite').then((m) => m.AviationEngineeringSuite), { loading: panelLoading }),
+  avionics: dynamic(() => import('@/components/calculators/AvionicsElectronicsSuite').then((m) => m.AvionicsElectronicsSuite), { loading: panelLoading }),
+  geometry: dynamic(() => import('@/components/calculators/AircraftGeometrySuite').then((m) => m.AircraftGeometrySuite), { loading: panelLoading }),
+  environment: dynamic(() => import('@/components/calculators/ExternalFactorsSuite').then((m) => m.ExternalFactorsSuite), { loading: panelLoading }),
+  radiohorizon: dynamic(() => import('@/components/calculators/RadioHorizonSuite').then((m) => m.RadioHorizonSuite), { loading: panelLoading }),
+  coords: dynamic(() => import('@/components/calculators/CoordinateSystemsSuite').then((m) => m.CoordinateSystemsSuite), { loading: panelLoading }),
+  frequency: dynamic(() => import('@/components/calculators/FrequencyToolsSuite').then((m) => m.FrequencyToolsSuite), { loading: panelLoading }),
+  soldering: dynamic(() => import('@/components/calculators/SolderingSuite').then((m) => m.SolderingSuite), { loading: panelLoading }),
+  dronetools: dynamic(() => import('@/components/calculators/DroneEngineerToolset').then((m) => m.DroneEngineerToolset), { loading: panelLoading }),
+  ballistics: dynamic(() => import('@/components/calculators/BallisticsSuite').then((m) => m.BallisticsSuite), { loading: panelLoading }),
+  optics: dynamic(() => import('@/components/calculators/OpticsSuite').then((m) => m.OpticsSuite), { loading: panelLoading }),
+  battery: dynamic(() => import('@/components/calculators/BatteryPackSuite').then((m) => m.BatteryPackSuite), { loading: panelLoading }),
+  ew: dynamic(() => import('@/components/calculators/EwJammingSuite').then((m) => m.EwJammingSuite), { loading: panelLoading }),
+  windprofile: dynamic(() => import('@/components/calculators/WindProfileSuite').then((m) => m.WindProfileSuite), { loading: panelLoading }),
+  thermalcooling: dynamic(() => import('@/components/calculators/ThermalCoolingSuite').then((m) => m.ThermalCoolingSuite), { loading: panelLoading }),
+  acoustic: dynamic(() => import('@/components/calculators/AcousticSuite').then((m) => m.AcousticSuite), { loading: panelLoading }),
+  slipstream: dynamic(() => import('@/components/calculators/SlipstreamSuite').then((m) => m.SlipstreamSuite), { loading: panelLoading }),
 }
 
 // ── FAQ accordion ─────────────────────────────────────────────────────────────
@@ -270,9 +227,9 @@ function FaqSection() {
 type CalculatorDashboardProps = Readonly<{ activeTab?: string }>
 
 export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: CalculatorDashboardProps) {
-  const { activeTab, toastVisible, handleTabChange, handleShare } = useDashboardNav(tabs, requestedTab)
+  const { activeTab, toastVisible, handleTabChange, handleShare } = useDashboardNav(dashboardTabs, requestedTab)
 
-  const activeTabData = tabs.find((t) => t.value === activeTab)!
+  const activeTabData = dashboardTabs.find((t) => t.value === activeTab) as DashboardTabDef
   const ActiveTabIcon = activeTabData.icon
 
   return (
@@ -291,7 +248,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
               aria-label="Вибір розділу"
               className="flex-1 bg-transparent text-white text-sm font-medium focus:outline-none cursor-pointer appearance-none"
             >
-              {tabGroups.map((g) => (
+              {dashboardTabGroups.map((g) => (
                 g.group
                   ? <optgroup key={g.group} label={g.group} className="bg-ecalc-darksurf text-white/60">
                       {g.tabs.map((tab) => (
@@ -417,7 +374,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
             <div className="mt-2.5 grid grid-cols-2 gap-2 text-xs">
               <div className="metric-tile-dark text-center">
                 <div className="text-[9px] text-white/40 uppercase tracking-[0.06em]">Розділів</div>
-                <div className="mt-0.5 text-xl font-bold text-white tabular-nums">{tabs.filter(t => t.value !== 'dashboard').length}</div>
+                <div className="mt-0.5 text-xl font-bold text-white tabular-nums">{dashboardTabs.filter((t) => t.value !== 'dashboard').length}</div>
               </div>
               <div className="metric-tile-dark text-center">
                 <div className="text-[9px] text-white/40 uppercase tracking-[0.06em]">Інструментів</div>
@@ -428,7 +385,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
 
           {/* Grouped nav */}
           <TabsList className="h-auto w-full flex-col items-stretch bg-transparent p-0 gap-0.5" aria-label="Навігація калькуляторів" data-testid="dashboard-tabs">
-            {tabGroups.map((g) => (
+            {dashboardTabGroups.map((g) => (
               <div key={g.group ?? '__home'}>
                 {g.group && (
                   <div className="px-2.5 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
@@ -584,31 +541,26 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
             </Card>
           </TabsContent>
 
-          <TabsContent value="mission"      data-testid="tab-panel-mission">{activeTab === 'mission'      && <ErrorBoundary><MissionPlanningSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="fieldops"   data-testid="tab-panel-fieldops">{activeTab === 'fieldops'   && <ErrorBoundary><FieldOpsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="dronedb"      data-testid="tab-panel-dronedb">{activeTab === 'dronedb'      && <ErrorBoundary><DroneDatabase /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="perfcalc"     data-testid="tab-panel-perfcalc">{activeTab === 'perfcalc'     && <ErrorBoundary><PerfCalc /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="propcalc"     data-testid="tab-panel-propcalc">{activeTab === 'propcalc'     && <ErrorBoundary><PropCalcBasic /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="xcoptercalc"  data-testid="tab-panel-xcoptercalc">{activeTab === 'xcoptercalc'  && <ErrorBoundary><XcopterCalcBasic /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="cgcalc"       data-testid="tab-panel-cgcalc">{activeTab === 'cgcalc'       && <ErrorBoundary><CGCalcBasic /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="aeronav"      data-testid="tab-panel-aeronav">{activeTab === 'aeronav'      && <ErrorBoundary><AeroNavigationSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="engineering"  data-testid="tab-panel-engineering">{activeTab === 'engineering'  && <ErrorBoundary><AviationEngineeringSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="avionics"     data-testid="tab-panel-avionics">{activeTab === 'avionics'     && <ErrorBoundary><AvionicsElectronicsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="geometry"     data-testid="tab-panel-geometry">{activeTab === 'geometry'     && <ErrorBoundary><AircraftGeometrySuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="environment"  data-testid="tab-panel-environment">{activeTab === 'environment'  && <ErrorBoundary><ExternalFactorsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="radiohorizon" data-testid="tab-panel-radiohorizon">{activeTab === 'radiohorizon' && <ErrorBoundary><RadioHorizonSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="coords"       data-testid="tab-panel-coords">{activeTab === 'coords'       && <ErrorBoundary><CoordinateSystemsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="frequency"    data-testid="tab-panel-frequency">{activeTab === 'frequency'    && <ErrorBoundary><FrequencyToolsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="soldering"    data-testid="tab-panel-soldering">{activeTab === 'soldering'    && <ErrorBoundary><SolderingSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="dronetools"   data-testid="tab-panel-dronetools">{activeTab === 'dronetools'   && <ErrorBoundary><DroneEngineerToolset /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="ballistics"   data-testid="tab-panel-ballistics">{activeTab === 'ballistics'   && <ErrorBoundary><BallisticsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="optics"       data-testid="tab-panel-optics">{activeTab === 'optics'       && <ErrorBoundary><OpticsSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="battery"      data-testid="tab-panel-battery">{activeTab === 'battery'      && <ErrorBoundary><BatteryPackSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="ew"            data-testid="tab-panel-ew">{activeTab === 'ew'            && <ErrorBoundary><EwJammingSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="windprofile"  data-testid="tab-panel-windprofile">{activeTab === 'windprofile'  && <ErrorBoundary><WindProfileSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="thermalcooling" data-testid="tab-panel-thermalcooling">{activeTab === 'thermalcooling' && <ErrorBoundary><ThermalCoolingSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="acoustic"     data-testid="tab-panel-acoustic">{activeTab === 'acoustic'     && <ErrorBoundary><AcousticSuite /></ErrorBoundary>}</TabsContent>
-          <TabsContent value="slipstream"  data-testid="tab-panel-slipstream">{activeTab === 'slipstream'  && <ErrorBoundary><SlipstreamSuite /></ErrorBoundary>}</TabsContent>
+          {dashboardTabs
+            .filter((tab) => tab.value !== 'dashboard')
+            .map((tab) => {
+              const Suite = suiteRegistry[tab.value]
+              if (!Suite) return null
+
+              return (
+                <TabsContent
+                  key={tab.value}
+                  value={tab.value}
+                  data-testid={`tab-panel-${tab.value}`}
+                >
+                  {activeTab === tab.value && (
+                    <ErrorBoundary>
+                      <Suite />
+                    </ErrorBoundary>
+                  )}
+                </TabsContent>
+              )
+            })}
         </div>
       </Tabs>
     </section>

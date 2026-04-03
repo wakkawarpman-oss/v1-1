@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { round } from '@/lib/aero'
 import type { RiskLevel, ThrustResult } from '@/lib/propulsion-physics'
 
@@ -11,7 +12,7 @@ function riskTone(risk: RiskLevel): string {
   return 'text-emerald-400'
 }
 
-export function ThrustResultCard({ result }: ThrustResultCardProps) {
+function ThrustResultCardInner({ result }: ThrustResultCardProps) {
   return (
     <div className="rounded-lg border border-ecalc-border bg-ecalc-lightbg p-4 space-y-3">
       <h4 className="text-sm font-semibold text-ecalc-navy">Thrust Calculator</h4>
@@ -42,6 +43,8 @@ export function ThrustResultCard({ result }: ThrustResultCardProps) {
     </div>
   )
 }
+
+export const ThrustResultCard = memo(ThrustResultCardInner)
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (

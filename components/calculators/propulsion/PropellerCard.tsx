@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -14,7 +15,7 @@ type PropellerCardProps = {
   readonly onApplyProp: (id: string) => void
 }
 
-export function PropellerCard(props: PropellerCardProps) {
+function PropellerCardInner(props: PropellerCardProps) {
   const {
     draft,
     propBrand,
@@ -72,3 +73,5 @@ export function PropellerCard(props: PropellerCardProps) {
     </div>
   )
 }
+
+export const PropellerCard = memo(PropellerCardInner)

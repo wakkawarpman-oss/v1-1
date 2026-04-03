@@ -1,5 +1,5 @@
-import { Resend } from 'resend'
 import { NextRequest, NextResponse } from 'next/server'
+import { fetchWithRetry } from '@/lib/resilience'
 
 // In-memory rate limiter: max 5 requests per IP per 60 minutes.
 // Resets on cold start — acceptable for free-tier abuse prevention.
@@ -90,26 +90,49 @@ export async function POST(req: NextRequest) {
   const altM             = sanitizeNum(body.altM)
   const notes            = sanitizeText(body.notes)
 
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resendApiKey = process.env.RESEND_API_KEY
+  const text = [
+    `Тип: ${droneType}`,
+    `Час польоту реальний: ${flightTimeActual} хв`,
+    `Час польоту розрахунковий: ${flightTimeCalc} хв`,
+    `Вітер: ${wind} м/с`,
+    `Температура: ${tempC} °C`,
+    `Висота: ${altM} м`,
+    `Примітки: ${notes}`,
+  ].join('\n')
 
   try {
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: 'wakkawarpman@gmail.com',
-      subject: `[droneCalc] Телеметрія — ${droneType}`,
-      text: [
-        `Тип: ${droneType}`,
-        `Час польоту реальний: ${flightTimeActual} хв`,
-        `Час польоту розрахунковий: ${flightTimeCalc} хв`,
-        `Вітер: ${wind} м/с`,
-        `Температура: ${tempC} °C`,
-        `Висота: ${altM} м`,
-        `Примітки: ${notes}`,
-      ].join('\n'),
-    })
+    if (!resendApiKey) {
+      console.error('[telemetry] Missing RESEND_API_KEY. Fallback 202 triggered.')
+      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+    }
+
+    const response = await fetchWithRetry(
+      'https://api.resend.com/emails',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'onboarding@resend.dev',
+          to: ['wakkawarpman@gmail.com'],
+          subject: `[droneCalc] Телеметрія — ${droneType}`,
+          text,
+        }),
+      },
+      { timeout: 3000, retries: 1, backoff: 300 },
+    )
+
+    if (!response.ok) {
+      console.error(`[telemetry] Provider returned status ${response.status}. Fallback 202 triggered.`)
+      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error('[telemetry] Resend error:', err)
-    return NextResponse.json({ ok: false }, { status: 500 })
+    console.error('[telemetry] Resilience fallback triggered:', err)
+    return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
   }
 }

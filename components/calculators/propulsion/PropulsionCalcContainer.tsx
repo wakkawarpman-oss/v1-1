@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { usePersistedState } from '@/hooks/usePersistedState'
+import { useIntegrationState } from '@/hooks/useIntegrationState'
 import { round } from '@/lib/aero'
 import { MOTORS, searchMotors, type MotorSpec } from '@/lib/motor-db'
 import { getPropsByBrand, PROP_BRANDS, PROPS } from '@/lib/prop-db'
@@ -20,6 +21,7 @@ import {
   computeThrustResult,
   suggestPropForMotor,
 } from '@/lib/propulsion-physics'
+import { estimateFlightTimeAt80DoD } from '@/lib/integration-contracts'
 import { MotorCard } from '@/components/calculators/propulsion/MotorCard'
 import { PropellerCard } from '@/components/calculators/propulsion/PropellerCard'
 import { ThrustResultCard } from '@/components/calculators/propulsion/ThrustResultCard'
@@ -69,6 +71,10 @@ const DEFAULT_BATTERY_DRAFT: BatteryDraft = {
 export function PropulsionCalcContainer() {
   const [state, setState] = usePersistedState<PropulsionState>('propcalc.contract.v1', DEFAULT_STATE)
   const [motorResults, setMotorResults] = useState<MotorSpec[]>([])
+  const integration = useIntegrationState()
+  const integrationState = integration.state
+  const integrationSummary = integration.summary
+  const integrationPatch = integration.patch
 
   const voltageV = useMemo(() => {
     const draft: BatteryDraft = {
@@ -95,7 +101,38 @@ export function PropulsionCalcContainer() {
     [voltageV, motorInput, propInput],
   )
 
-  function updateMotor<K extends keyof MotorDraft>(key: K, value: number) {
+  const totalMaxThrustG = useMemo(() => result.thrustG * integrationState.motorCount, [result.thrustG, integrationState.motorCount])
+
+  useEffect(() => {
+    const fromIntegrationCells = integrationState.batteryCells
+    const fromIntegrationVpc = integrationState.batteryVoltageV / Math.max(1, fromIntegrationCells)
+    setState((prev) => {
+      if (
+        prev.batteryCells === fromIntegrationCells &&
+        Math.abs(prev.batteryVoltagePerCell - fromIntegrationVpc) < 0.01
+      ) {
+        return prev
+      }
+      return {
+        ...prev,
+        batteryCells: fromIntegrationCells,
+        batteryVoltagePerCell: round(fromIntegrationVpc, 2),
+      }
+    })
+  }, [integrationState.batteryCells, integrationState.batteryVoltageV, setState])
+
+  useEffect(() => {
+    integrationPatch({
+      maxThrustG: totalMaxThrustG,
+      hoverCurrentA: result.currentA * integrationState.motorCount,
+      flightTime80Min: estimateFlightTimeAt80DoD({
+        batteryCapacityMah: integrationState.batteryCapacityMah,
+        hoverCurrentA: result.currentA * integrationState.motorCount,
+      }),
+    })
+  }, [integrationPatch, integrationState.batteryCapacityMah, integrationState.motorCount, result.currentA, totalMaxThrustG])
+
+  const updateMotor = useCallback((key: keyof MotorDraft, value: number) => {
     setState((prev) => {
       const nextMotor = mergeDraftNumber(prev.motor, key, value)
       let nextProp = prev.prop
@@ -122,16 +159,16 @@ export function PropulsionCalcContainer() {
         prop: nextProp,
       }
     })
-  }
+  }, [setState, voltageV])
 
-  function updateProp<K extends keyof PropDraft>(key: K, value: number) {
+  const updateProp = useCallback((key: keyof PropDraft, value: number) => {
     setState((prev) => ({ ...prev, prop: mergeDraftNumber(prev.prop, key, value) }))
-  }
+  }, [setState])
 
-  function handleMotorQuery(query: string) {
+  const handleMotorQuery = useCallback((query: string) => {
     setState((prev) => ({ ...prev, motorQuery: query }))
     setMotorResults(searchMotors(query))
-  }
+  }, [setState])
 
   function inferStatorDiameter(motor: MotorSpec): number {
     const packed = `${motor.brand} ${motor.name}`.replace(/[^0-9]/g, '')
@@ -141,7 +178,7 @@ export function PropulsionCalcContainer() {
     return DEFAULT_STATE.motor.statorDiameterMm
   }
 
-  function applyMotor(motor: MotorSpec) {
+  const applyMotor = useCallback((motor: MotorSpec) => {
     setState((prev) => {
       const next = {
         ...prev,
@@ -176,10 +213,11 @@ export function PropulsionCalcContainer() {
         propBrand: suggestedProp.brand,
       }
     })
+    integrationPatch({ motorWeightG: motor.weightG ?? integrationState.motorWeightG })
     setMotorResults([])
-  }
+  }, [integrationPatch, integrationState.motorWeightG, setState, voltageV])
 
-  function applyProp(id: string) {
+  const applyProp = useCallback((id: string) => {
     const prop = PROPS.find((item) => item.id === id)
     if (!prop) return
     setState((prev) => ({
@@ -190,12 +228,17 @@ export function PropulsionCalcContainer() {
         bladeCount: prop.blades,
       },
     }))
-  }
+  }, [setState])
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-ecalc-border bg-ecalc-lightbg p-3 text-xs text-ecalc-muted">
         Battery voltage через PowerContracts: <span className="font-semibold text-ecalc-navy">{round(voltageV, 2)} В</span>
+      </div>
+
+      <div className={`rounded-lg border px-3 py-2 text-xs ${integrationSummary.lowPowerToWeight ? 'border-red-500/30 bg-red-500/10 text-red-300' : 'border-ecalc-green/30 bg-ecalc-green/10 text-ecalc-green'}`}>
+        Total Weight: <span className="font-semibold">{round(integrationSummary.totalWeightG, 0)} г</span> · TWR: <span className="font-semibold">{round(integrationSummary.twr, 2)}</span>
+        {integrationSummary.warning ? <span className="ml-2 font-semibold">{integrationSummary.warning}</span> : null}
       </div>
 
       <MotorCard

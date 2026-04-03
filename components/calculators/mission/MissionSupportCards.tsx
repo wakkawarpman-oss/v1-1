@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Battery, Navigation, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, formatToolNumber, ResultBox, ToolCard } from '@/components/calculators/CalculatorToolPrimitives'
 import { usePersistedState } from '@/hooks/usePersistedState'
+import { useIntegrationState } from '@/hooks/useIntegrationState'
 import {
   timeOnTarget,
   batteryRemainingEst,
@@ -60,6 +61,19 @@ export function BatteryRemainingCard() {
     elapsedMinutes: 10,
   })
   const [remResult, setRemResult] = useState<BatteryRemainingResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    setRemState((prev) => {
+      const next = {
+        ...prev,
+        totalMah: integration.state.batteryCapacityMah,
+        avgCurrentA: integration.state.hoverCurrentA,
+      }
+      if (next.totalMah === prev.totalMah && Math.abs(next.avgCurrentA - prev.avgCurrentA) < 0.05) return prev
+      return next
+    })
+  }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setRemState])
 
   return (
     <ToolCard
@@ -117,6 +131,24 @@ export function LoiterBudgetCard() {
     reservePct: 20,
   })
   const [loiterResult, setLoiterResult] = useState<LoiterBudgetResult | null>(null)
+  const integration = useIntegrationState()
+
+  useEffect(() => {
+    setLoiterState((prev) => {
+      const next = {
+        ...prev,
+        batteryMah: integration.state.batteryCapacityMah,
+        hoverCurrentA: integration.state.hoverCurrentA,
+      }
+      if (
+        next.batteryMah === prev.batteryMah &&
+        Math.abs(next.hoverCurrentA - prev.hoverCurrentA) < 0.05
+      ) {
+        return prev
+      }
+      return next
+    })
+  }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setLoiterState])
 
   return (
     <ToolCard
