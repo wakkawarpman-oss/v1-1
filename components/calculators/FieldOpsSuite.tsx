@@ -109,12 +109,12 @@ function PreflightGate() {
           <Field id="windGust"     label="Порив вітру (м/с)"      value={inp.windGust}      step={0.5} min={0} onChange={(v) => set('windGust', v)} />
           <Field id="windLimit"    label="Ліміт БПЛА (м/с)"       value={inp.windLimit}     step={0.5} min={0} onChange={(v) => set('windLimit', v)} />
           <Field id="linkMarginDb" label="Запас лінку (дБ)"         value={inp.linkMarginDb}  step={1}   onChange={(v) => set('linkMarginDb', v)} />
-          <Field id="packetLoss"   label="Packet loss (%)"         value={inp.packetLossPct} step={1} min={0} onChange={(v) => set('packetLossPct', v)} />
+          <Field id="packetLoss"   label="Втрата пакетів (%)"      value={inp.packetLossPct} step={1} min={0} onChange={(v) => set('packetLossPct', v)} />
           <Field id="gpsSat"       label="GPS супутники"           value={inp.gpsSatCount}   step={1} min={0} onChange={(v) => set('gpsSatCount', v)} />
         </div>
         <div className="space-y-3">
-          <Toggle id="reserveOk" label="Резерв батареї feasible" value={inp.reserveFeasible} onChange={(v) => set('reserveFeasible', v)} />
-          <Toggle id="homeLock"  label="Home point locked"        value={inp.homeLock}        onChange={(v) => set('homeLock', v)} />
+          <Toggle id="reserveOk" label="Резерв батареї забезпечено" value={inp.reserveFeasible} onChange={(v) => set('reserveFeasible', v)} />
+          <Toggle id="homeLock"  label="Точка Home зафіксована"   value={inp.homeLock}        onChange={(v) => set('homeLock', v)} />
         </div>
 
         <div className="rounded-xl border border-ecalc-border/60 bg-ecalc-lightbg/30 p-4 space-y-3">
