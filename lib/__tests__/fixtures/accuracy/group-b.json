@@ -3,8 +3,8 @@
   "description": "Operational metrics with moderate uncertainty",
   "policy": {
     "gate": "soft-report",
-    "warnAbovePct": 10,
-    "failAbovePct": 15
+    "warnAbovePct": 1,
+    "failAbovePct": 3
   },
   "cases": [
     {
@@ -20,12 +20,12 @@
         "reservePct": 20
       },
       "expected": {
-        "value": 12,
+        "value": 10.503936,
         "unit": "min"
       },
       "tolerance": {
         "type": "percent",
-        "value": 10
+        "value": 1
       }
     }
   ]

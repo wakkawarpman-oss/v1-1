@@ -44,3 +44,7 @@ Each fixture file follows this shape:
 - Group A fixtures represent Golden Records and are treated as frozen baselines.
 - CI must fail when a Group A case drifts above case tolerance OR `policy.maxDriftPct`.
 - Update Group A expected values only with explicit engineering sign-off and source references.
+
+## Soft Gate Policy (B/C/D)
+- Runner evaluates `warnAbovePct` and `failAbovePct` for non-critical groups.
+- Soft gates never fail CI in current phase, but are reported as severity counters in logs.

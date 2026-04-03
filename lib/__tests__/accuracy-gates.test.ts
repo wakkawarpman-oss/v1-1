@@ -51,6 +51,7 @@ type EvaluatedCase = {
   toleranceValue: number
   withinTolerance: boolean
   policyPass: boolean
+  softLevel: 'ok' | 'warn' | 'fail'
 }
 
 const FIXTURE_DIR = path.resolve(process.cwd(), 'lib/__tests__/fixtures/accuracy')
@@ -155,6 +156,7 @@ function reportResults(results: EvaluatedCase[]) {
     driftPct: Number(row.driftPct.toFixed(4)),
     tolerance: `${row.toleranceType}:${row.toleranceValue}`,
     policyPass: row.policyPass ? 'PASS' : 'FAIL',
+    softLevel: row.softLevel,
     status: row.withinTolerance ? 'PASS' : 'DRIFT',
   }))
 
@@ -196,6 +198,18 @@ describe('accuracy gates fixtures runner', () => {
           fixture.policy.maxDriftPct === undefined ||
           driftPct <= fixture.policy.maxDriftPct
 
+        let softLevel: 'ok' | 'warn' | 'fail' = 'ok'
+        if (fixture.group !== 'A') {
+          const failAbove = fixture.policy.failAbovePct
+          const warnAbove = fixture.policy.warnAbovePct
+
+          if (typeof failAbove === 'number' && driftPct > failAbove) {
+            softLevel = 'fail'
+          } else if (typeof warnAbove === 'number' && driftPct > warnAbove) {
+            softLevel = 'warn'
+          }
+        }
+
         evaluated.push({
           group: fixture.group,
           gate: fixture.policy.gate,
@@ -209,6 +223,7 @@ describe('accuracy gates fixtures runner', () => {
           toleranceValue: testCase.tolerance.value,
           withinTolerance,
           policyPass,
+          softLevel,
         })
       }
     }
@@ -218,11 +233,12 @@ describe('accuracy gates fixtures runner', () => {
     const hardFailures = evaluated.filter(
       (row) => row.group === 'A' && (!row.withinTolerance || !row.policyPass),
     )
-    const softWarnings = evaluated.filter((row) => row.group !== 'A' && !row.withinTolerance)
+    const softWarnings = evaluated.filter((row) => row.group !== 'A' && row.softLevel === 'warn')
+    const softFails = evaluated.filter((row) => row.group !== 'A' && row.softLevel === 'fail')
 
-    if (softWarnings.length > 0) {
+    if (softWarnings.length > 0 || softFails.length > 0) {
       console.warn(
-        `[accuracy-gates] Soft drift detected in groups B/C/D (${softWarnings.length} case(s)); CI remains green.`,
+        `[accuracy-gates] Soft gate signals: warn=${softWarnings.length}, fail=${softFails.length}. CI remains green by policy.`,
       )
     }
 

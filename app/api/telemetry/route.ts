@@ -43,22 +43,40 @@ export async function OPTIONS(req: NextRequest) {
   if (!ALLOWED_ORIGINS.has(origin)) {
     return new NextResponse(null, { status: 403 })
   }
+
+  const requestHeaders = req.headers.get('access-control-request-headers')
+  const allowedHeaders = requestHeaders?.trim().length
+    ? requestHeaders
+    : 'Content-Type, X-Idempotency-Key'
+
   return new NextResponse(null, {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': allowedHeaders,
       'Access-Control-Max-Age': '86400',
     },
   })
+}
+
+function withCors(
+  body: { ok?: boolean; status?: string; warning?: string },
+  status: number,
+  origin: string,
+) {
+  const headers = origin && ALLOWED_ORIGINS.has(origin)
+    ? { 'Access-Control-Allow-Origin': origin }
+    : undefined
+
+  return NextResponse.json(body, { status, headers })
 }
 
 export async function POST(req: NextRequest) {
   // CORS — reject cross-origin requests not from allowed origins
   const origin = req.headers.get('origin') ?? ''
   if (origin && !ALLOWED_ORIGINS.has(origin)) {
-    return NextResponse.json({ ok: false }, { status: 403 })
+    return withCors({ ok: false }, 403, origin)
   }
 
   // Rate limiting by IP
@@ -67,7 +85,7 @@ export async function POST(req: NextRequest) {
     req.headers.get('x-real-ip') ??
     'unknown'
   if (isRateLimited(ip)) {
-    return NextResponse.json({ ok: false }, { status: 429 })
+    return withCors({ ok: false }, 429, origin)
   }
 
   // Parse body — return 400 on bad JSON
@@ -75,7 +93,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json()
   } catch {
-    return NextResponse.json({ ok: false }, { status: 400 })
+    return withCors({ ok: false }, 400, origin)
   }
 
   // Validate and sanitize inputs
@@ -111,12 +129,12 @@ export async function POST(req: NextRequest) {
   try {
     if (!resendApiKey) {
       console.error('[telemetry] Missing RESEND_API_KEY. Fallback 202 triggered.')
-      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+      return withCors({ status: 'accepted', warning: 'delayed_processing' }, 202, origin)
     }
 
     if (!telemetryTo.length) {
       console.error('[telemetry] Missing TELEMETRY_TO recipient list. Fallback 202 triggered.')
-      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+      return withCors({ status: 'accepted', warning: 'delayed_processing' }, 202, origin)
     }
 
     const response = await fetchWithRetry(
@@ -140,12 +158,12 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       console.error(`[telemetry] Provider returned status ${response.status}. Fallback 202 triggered.`)
-      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+      return withCors({ status: 'accepted', warning: 'delayed_processing' }, 202, origin)
     }
 
-    return NextResponse.json({ ok: true })
+    return withCors({ ok: true }, 200, origin)
   } catch (err) {
     console.error('[telemetry] Resilience fallback triggered:', err)
-    return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+    return withCors({ status: 'accepted', warning: 'delayed_processing' }, 202, origin)
   }
 }
