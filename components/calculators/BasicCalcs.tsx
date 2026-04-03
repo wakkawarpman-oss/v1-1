@@ -1,45 +1,22 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePersistedState } from '@/hooks/usePersistedState'
 import { DRONE_PREFILL_KEY, type DronePrefill } from '@/lib/drone-db'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { round, airDensity, propCtStatic, staticThrustFromCt } from '@/lib/aero'
+import { round } from '@/lib/aero'
+import { PropulsionCalcContainer } from '@/components/calculators/propulsion/PropulsionCalcContainer'
 
 export function PropCalcBasic() {
-  const [rpm, setRpm] = usePersistedState('propcalc.rpm', 9200)
-  const [diameter, setDiameter] = usePersistedState('propcalc.diameter', 12)
-  const [pitch, setPitch] = usePersistedState('propcalc.pitch', 6)
-  const [blades, setBlades] = usePersistedState('propcalc.blades', 2)
-  const [power, setPower] = usePersistedState('propcalc.power', 780)
-  const [voltage, setVoltage] = usePersistedState('propcalc.voltage', 14.8)
-
-  const result = useMemo(() => {
-    const ct     = propCtStatic(diameter, pitch, blades)
-    const thrust = staticThrustFromCt(ct, airDensity(0, 15), rpm, diameter)
-    const current = voltage > 0 ? power / voltage : 0
-    const efficiency = Math.min(88, 52 + (pitch / diameter) * 28)
-    return { thrust, current, efficiency }
-  }, [rpm, diameter, pitch, blades, power, voltage])
-
   return (
-    <BasicCalcShell title="propCalc — Мотор + Пропелер" description="Підбір мотора і пропелера: тяга, струм, ефективність та rpm.">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Оберти, rpm"><Input type="number" min="1" value={rpm} onChange={(e) => setRpm(Number(e.target.value))} /></Field>
-        <Field label="Потужність, W"><Input type="number" min="0" value={power} onChange={(e) => setPower(Number(e.target.value))} /></Field>
-        <Field label="Напруга, В"><Input type="number" step="0.1" min="0.1" value={voltage} onChange={(e) => setVoltage(Number(e.target.value))} /></Field>
-        <Field label="Діаметр, inch"><Input type="number" min="0.1" value={diameter} onChange={(e) => setDiameter(Number(e.target.value))} /></Field>
-        <Field label="Крок, inch"><Input type="number" min="0.1" value={pitch} onChange={(e) => setPitch(Number(e.target.value))} /></Field>
-        <Field label="Лопаті"><Select title="Кількість лопатей" value={String(blades)} onChange={(e) => setBlades(Number(e.target.value))}><option value="2">2</option><option value="3">3</option><option value="4">4</option></Select></Field>
-      </div>
-      <MetricGrid items={[
-        ['Статична тяга', `${round(result.thrust, 0)} г`],
-        ['Струм', `${round(result.current, 1)} A`],
-        ['Оцінка ефективності', `${round(result.efficiency, 1)} %`],
-      ]} />
+    <BasicCalcShell
+      title="propCalc — Мотор + Пропелер"
+      description="Sprint-4: Propulsion Contracts + Passive View. Розрахунок тяги централізовано в propulsion-physics."
+    >
+      <PropulsionCalcContainer />
     </BasicCalcShell>
   )
 }

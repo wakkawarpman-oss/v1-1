@@ -1,3 +1,8 @@
+import {
+  estimateBatteryRemaining,
+  estimateConservativeFlightTime,
+} from '@/lib/power-consumption'
+
 // ── Mission Planning Calculators ──────────────────────────────────────────
 
 export type EnduranceResult = {
@@ -18,8 +23,15 @@ export function missionEndurance(params: {
   if (batteryMah <= 0 || avgCurrentA <= 0 || speedKmh <= 0) {
     return { flightTimeMin: 0, maxRangeKm: 0, tacticalRadiusKm: 0 }
   }
-  const usableMah = batteryMah * (usablePct / 100)
-  const flightTimeH = usableMah / 1000 / avgCurrentA
+
+  const conservative = estimateConservativeFlightTime({
+    totalMah: batteryMah,
+    avgCurrentA,
+    usablePct,
+    reservePct: 0,
+  })
+  const usableMah = conservative.effectiveUsableMah
+  const flightTimeH = conservative.flightTimeMin / 60
   const flightTimeMin = flightTimeH * 60
   const maxRangeKm = speedKmh * flightTimeH
 
@@ -116,12 +128,16 @@ export function batteryRemainingEst(params: {
   elapsedMinutes: number
 }): BatteryRemainingResult {
   const { totalMah, avgCurrentA, elapsedMinutes } = params
-  if (totalMah <= 0) return { remainingMah: 0, remainingPct: 0, timeRemainingMin: 0 }
-  const usedMah = avgCurrentA * (elapsedMinutes / 60) * 1000
-  const remainingMah = Math.max(0, totalMah - usedMah)
-  const remainingPct = (remainingMah / totalMah) * 100
-  const timeRemainingMin = avgCurrentA > 0 ? (remainingMah / 1000 / avgCurrentA) * 60 : 0
-  return { remainingMah, remainingPct, timeRemainingMin }
+  const remaining = estimateBatteryRemaining({
+    totalMah,
+    avgCurrentA,
+    elapsedMinutes,
+  })
+  return {
+    remainingMah: remaining.remainingMah,
+    remainingPct: remaining.remainingPct,
+    timeRemainingMin: remaining.timeRemainingMin,
+  }
 }
 
 // ── Loiter Budget at Target ───────────────────────────────────────────────────
