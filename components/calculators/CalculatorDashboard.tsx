@@ -25,6 +25,7 @@ import { BatteryPackSuite } from '@/components/calculators/BatteryPackSuite'
 import { OpticsSuite } from '@/components/calculators/OpticsSuite'
 import { DroneDatabase } from '@/components/calculators/DroneDatabase'
 import { EwJammingSuite } from '@/components/calculators/EwJammingSuite'
+import { FieldOpsSuite } from '@/components/calculators/FieldOpsSuite'
 import { WindProfileSuite } from '@/components/calculators/WindProfileSuite'
 import { ThermalCoolingSuite } from '@/components/calculators/ThermalCoolingSuite'
 import { AcousticSuite } from '@/components/calculators/AcousticSuite'
@@ -52,9 +53,10 @@ const tabGroups: TabGroup[] = [
     { value: 'cgcalc',      label: 'cgCalc — Центр ваги',         shortLabel: 'cgCalc',      icon: Target },
   ]},
   { group: 'Планування місії', tabs: [
-    { value: 'mission',  label: 'Центр планування місії', shortLabel: 'Місія',      icon: Navigation },
-    { value: 'aeronav',  label: 'Аеронавігація',          shortLabel: 'AeroNav',    icon: Compass },
-    { value: 'coords',   label: 'Системи координат',      shortLabel: 'Координати', icon: Map },
+    { value: 'mission',   label: 'Центр планування місії', shortLabel: 'Місія',      icon: Navigation },
+    { value: 'fieldops',  label: 'Field Ops — Польові рішення', shortLabel: 'Field Ops', icon: ShieldCheck },
+    { value: 'aeronav',   label: 'Аеронавігація',          shortLabel: 'AeroNav',    icon: Compass },
+    { value: 'coords',    label: 'Системи координат',      shortLabel: 'Координати', icon: Map },
   ]},
   { group: 'Інженерія', tabs: [
     { value: 'engineering',   label: 'Aviation Engineering',  shortLabel: 'Engineering',   icon: Wrench },
@@ -497,6 +499,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
                     { tab: 'xcoptercalc',  accent: true,  tag: 'xcopterCalc', title: 'Мультиротор',               desc: 'Час висіння, запас тяги, витрати потужності, оцінка вильоту.' },
                     { tab: 'propcalc',     accent: false, tag: 'propCalc',    title: 'Мотор + Пропелер',          desc: 'Підбір пропелера, тяга, струм і потужність приводу.' },
                     { tab: 'cgcalc',       accent: false, tag: 'cgCalc',      title: 'Центр ваги',                desc: 'Центр ваги літака за секціями та позицією компонентів.' },
+                    { tab: 'fieldops',     accent: true,  tag: '🆕 Field Ops', title: 'Польові рішення',          desc: 'Preflight Gate, Bingo RTL, Mission Risk Index — оцінка вильоту з confidence та reasons.' },
                     { tab: 'aeronav',      accent: true,  tag: 'Aero + Nav',  title: 'Аеродинаміка і маршрут',   desc: 'Reynolds, ортодромія, локсодромія, поправка на вітер.' },
                     { tab: 'coords',       accent: false, tag: 'Coordinates', title: 'Системи координат',         desc: 'ECEF, ENU, UTM, Haversine, bearing, destination.' },
                     { tab: 'engineering',  accent: true,  tag: 'Engineering', title: 'Місія, тяга, L/D, батарея', desc: 'TAS/EAS, Бреге, CLmax, ROC, C-rate, torque, efficiency.' },
@@ -538,7 +541,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { value: '569',  label: 'Unit тестів',        sub: '20 тест-файлів' },
+                      { value: '632',  label: 'Unit тестів',        sub: '22 тест-файли' },
                       { value: '17',   label: 'Еталонних пресетів', sub: '4 калькулятори' },
                       { value: '<5%',  label: 'Похибка Ct/Cp',      sub: 'UIUC Prop DB' },
                       { value: '128',  label: 'Дронів у БД',        sub: 'ТТХ платформ' },
@@ -574,6 +577,7 @@ export function CalculatorDashboard({ activeTab: requestedTab = 'dashboard' }: C
           </TabsContent>
 
           <TabsContent value="mission"      data-testid="tab-panel-mission">{activeTab === 'mission'      && <ErrorBoundary><MissionPlanningSuite /></ErrorBoundary>}</TabsContent>
+          <TabsContent value="fieldops"   data-testid="tab-panel-fieldops">{activeTab === 'fieldops'   && <ErrorBoundary><FieldOpsSuite /></ErrorBoundary>}</TabsContent>
           <TabsContent value="dronedb"      data-testid="tab-panel-dronedb">{activeTab === 'dronedb'      && <ErrorBoundary><DroneDatabase /></ErrorBoundary>}</TabsContent>
           <TabsContent value="perfcalc"     data-testid="tab-panel-perfcalc">{activeTab === 'perfcalc'     && <ErrorBoundary><PerfCalc /></ErrorBoundary>}</TabsContent>
           <TabsContent value="propcalc"     data-testid="tab-panel-propcalc">{activeTab === 'propcalc'     && <ErrorBoundary><PropCalcBasic /></ErrorBoundary>}</TabsContent>
