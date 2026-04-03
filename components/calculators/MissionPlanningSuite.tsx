@@ -93,7 +93,7 @@ function EnduranceCard() {
       <Field label="Використовуваний заряд, %" hint="Рекомендовано 80% для LiPo">
         <Input type="number" min="0" max="100" value={endState.usablePct} onChange={(e) => setEndState((s) => ({ ...s, usablePct: Number(e.target.value) }))} />
       </Field>
-      <Field label="Резерв на повернення, %" hint="Від використовуваного заряду">
+      <Field label="Резерв на повернення, %" hint="Від загальної ємності батареї">
         <Input type="number" min="0" max="100" value={endState.reservePct} onChange={(e) => setEndState((s) => ({ ...s, reservePct: Number(e.target.value) }))} />
       </Field>
       <Button onClick={() => setEndResult(missionEndurance(endState))}>Розрахувати</Button>

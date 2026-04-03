@@ -275,7 +275,10 @@ export function peukertCapacityMah(
 ): number {
   if (ratedMah <= 0 || currentA <= 0 || peukertK <= 0) return ratedMah
   const i1c = ratedMah / 1000  // 1C current in A
-  return ratedMah * Math.pow(i1c / currentA, peukertK - 1)
+  // Clamp ratio to [0.1, 10] — same bounds as aero.ts peukertCapacityMah —
+  // so both implementations return identical results across all C-rates.
+  const ratio = Math.min(10, Math.max(0.1, i1c / currentA))
+  return ratedMah * Math.pow(ratio, peukertK - 1)
 }
 
 /**

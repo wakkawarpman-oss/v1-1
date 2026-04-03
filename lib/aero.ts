@@ -57,8 +57,11 @@ export function airDensity(elevationM: number, temperatureC: number) {
   const lapseRate = 0.0065
   const gasConstant = 287.05
   const gravity = 9.80665
-  const tempK = temperatureC + 273.15
-  const standardTempK = 288.15 - lapseRate * elevationM
+  // Guard: absolute zero floor prevents division by zero / NaN
+  const tempK = Math.max(1, temperatureC + 273.15)
+  // Guard: ISA lapse-rate model is only valid below ~44 km (standardTempK > 0).
+  // Clamp to 1 K so Math.pow stays real-valued for any user input.
+  const standardTempK = Math.max(1, 288.15 - lapseRate * elevationM)
   const pressure =
     seaLevelPressure *
     Math.pow(standardTempK / 288.15, gravity / (gasConstant * lapseRate))
@@ -484,7 +487,15 @@ export function perfSummary(input: PerfCalcInput) {
     }
   }).filter((point) => Number.isFinite(point.reqPower))
 
-  const initialPoint = points[0]
+  // Safety net: with the airDensity guard above, this path is only reachable on
+  // genuinely degenerate inputs (e.g. wingArea = 0). Provide a zero-valued point
+  // so reduce() never receives undefined as its initial accumulator.
+  const ZERO_POINT: PerfCurvePoint = {
+    speedKmh: 0, parasitePower: 0, inducedPower: 0, reqPower: 0,
+    availablePower: 0, thrustDynamicG: 0, thrustDynamicN: 0,
+    roc: 0, climbAngle: 0, efficiencyWhKm: 0,
+  }
+  const initialPoint = points[0] ?? ZERO_POINT
   const minPowerPoint = points.reduce(
     (best, current) => (current.reqPower < best.reqPower ? current : best),
     initialPoint,
