@@ -153,4 +153,12 @@ test.describe('dashboard smoke @smoke', () => {
     await expect(page).toHaveURL(/tab=slipstream/)
     await expect(page.getByTestId('tab-panel-slipstream')).toBeVisible()
   })
+
+  test('navigation tabs: fieldops', async ({ page }) => {
+    await page.goto('/dashboard?tab=dashboard')
+
+    await page.getByTestId('dashboard-tab-fieldops').click()
+    await expect(page).toHaveURL(/tab=fieldops/)
+    await expect(page.getByTestId('tab-panel-fieldops')).toBeVisible()
+  })
 })
