@@ -218,6 +218,11 @@ function RichardsonNumberCard() {
       <Field label="ΔU, м/с"><Input type="number" step="0.1" value={riState.deltaU} onChange={(e) => setRiState((s) => ({ ...s, deltaU: Number(e.target.value) }))} /></Field>
       <Button onClick={() => setRiResult(richardsonNumber(riState.gravity, riState.thetaV, riState.deltaThetaV, riState.deltaZ, riState.deltaU))}>Розрахувати</Button>
       <ResultBox>Ri: <span className="font-semibold text-ecalc-navy">{formatToolNumber(riResult, 3)}</span></ResultBox>
+      {riResult === Number.POSITIVE_INFINITY ? (
+        <div className="text-[11px] text-ecalc-muted">
+          Зсув вітру дорівнює 0, тому Ri → ∞ (домінує стратифікація, shear відсутній).
+        </div>
+      ) : null}
     </ToolCard>
   )
 }

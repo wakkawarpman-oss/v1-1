@@ -6,7 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 
 export function formatToolNumber(value: number | null | undefined, digits = 2) {
-  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—'
+  if (typeof value !== 'number' || Number.isNaN(value)) return '—'
+  if (value === Number.POSITIVE_INFINITY) return '∞'
+  if (value === Number.NEGATIVE_INFINITY) return '-∞'
+  return Number.isFinite(value) ? value.toFixed(digits) : '—'
 }
 
 export function ResultBox({
