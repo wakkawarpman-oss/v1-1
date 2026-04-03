@@ -10,6 +10,14 @@ import {
 } from '@react-pdf/renderer'
 import { round, type PerfCalcInput, type PerfCurvePoint } from '@/lib/aero'
 
+Font.register({
+  family: 'NotoSans',
+  fonts: [
+    { src: '/fonts/NotoSans-Regular.ttf', fontWeight: 400 },
+    { src: '/fonts/NotoSans-Bold.ttf', fontWeight: 700 },
+  ],
+})
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const C = {
@@ -28,7 +36,7 @@ const C = {
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Helvetica',
+    fontFamily: 'NotoSans',
     fontSize: 8,
     color: C.navy,
     backgroundColor: C.white,
@@ -42,7 +50,7 @@ const styles = StyleSheet.create({
   headerLeft: { flex: 1 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   brandDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.orange },
-  brandName: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: C.navy },
+  brandName: { fontSize: 14, fontFamily: 'NotoSans', fontWeight: 700, color: C.navy },
   reportTitle: { fontSize: 10, color: C.muted, marginTop: 2 },
   headerRight: { alignItems: 'flex-end' },
   dateText: { fontSize: 7, color: C.muted },
@@ -51,10 +59,10 @@ const styles = StyleSheet.create({
   // Model badges
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 14 },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, flexDirection: 'row', gap: 3 },
-  badgeText: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', letterSpacing: 0.3 },
+  badgeText: { fontSize: 6.5, fontFamily: 'NotoSans', fontWeight: 700, letterSpacing: 0.3 },
 
   // Section title
-  sectionTitle: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: C.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 14 },
+  sectionTitle: { fontSize: 7.5, fontFamily: 'NotoSans', fontWeight: 700, color: C.muted, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6, marginTop: 14 },
 
   // Two-column layout
   row2: { flexDirection: 'row', gap: 12 },
@@ -67,24 +75,24 @@ const styles = StyleSheet.create({
   tableRowAlt: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, backgroundColor: C.light },
   tableHead: { flexDirection: 'row', backgroundColor: C.navy },
   thCell: { flex: 1, paddingHorizontal: 6, paddingVertical: 4 },
-  thText: { fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: C.white, letterSpacing: 0.5 },
+  thText: { fontSize: 6.5, fontFamily: 'NotoSans', fontWeight: 700, color: C.white, letterSpacing: 0.5 },
   tdLabel: { flex: 2, paddingHorizontal: 6, paddingVertical: 4 },
   tdValue: { flex: 1.2, paddingHorizontal: 6, paddingVertical: 4 },
   tdLabelText: { fontSize: 7.5, color: C.muted },
-  tdValueText: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: C.navy },
+  tdValueText: { fontSize: 7.5, fontFamily: 'NotoSans', fontWeight: 700, color: C.navy },
 
   // Key metrics grid
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   metricTile: { width: '31.5%', borderWidth: 1, borderColor: C.border, borderRadius: 4, padding: 6, backgroundColor: C.light },
   metricLabel: { fontSize: 6, color: C.muted, letterSpacing: 0.3, textTransform: 'uppercase', marginBottom: 3 },
-  metricValue: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: C.navy },
+  metricValue: { fontSize: 11, fontFamily: 'NotoSans', fontWeight: 700, color: C.navy },
   metricUnit: { fontSize: 6.5, color: C.muted, marginTop: 1 },
 
   // Curve table
   curveTable: { borderWidth: 1, borderColor: C.border, borderRadius: 4, overflow: 'hidden' },
   curveHead: { flexDirection: 'row', backgroundColor: C.navy, paddingVertical: 3 },
   curveHeadCell: { flex: 1, paddingHorizontal: 4 },
-  curveHeadText: { fontSize: 6, fontFamily: 'Helvetica-Bold', color: C.white, letterSpacing: 0.3, textAlign: 'center' },
+  curveHeadText: { fontSize: 6, fontFamily: 'NotoSans', fontWeight: 700, color: C.white, letterSpacing: 0.3, textAlign: 'center' },
   curveRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingVertical: 2.5 },
   curveRowAlt: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: C.border, paddingVertical: 2.5, backgroundColor: C.light },
   curveCell: { flex: 1, paddingHorizontal: 4 },
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
 
   // Warning box
   warnBox: { borderWidth: 1, borderColor: '#fbbf24', borderRadius: 4, padding: 7, backgroundColor: '#fffbeb', marginTop: 8 },
-  warnTitle: { fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 3 },
+  warnTitle: { fontSize: 7, fontFamily: 'NotoSans', fontWeight: 700, color: '#92400e', marginBottom: 3 },
   warnText: { fontSize: 7, color: '#92400e', lineHeight: 1.4 },
 
   // Footer

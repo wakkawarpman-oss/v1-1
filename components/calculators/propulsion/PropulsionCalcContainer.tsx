@@ -7,6 +7,12 @@ import { round } from '@/lib/aero'
 import { MOTORS, searchMotors, type MotorSpec } from '@/lib/motor-db'
 import { getPropsByBrand, PROP_BRANDS, PROPS } from '@/lib/prop-db'
 import {
+  applyCatalogMotor,
+  applyMotorDraftChange,
+  syncBatteryFromIntegration,
+  toPropDraft,
+} from '@/lib/domain/propulsion/state'
+import {
   mapBatteryDraftToInput,
   type BatteryDraft,
 } from '@/lib/power-contracts'
@@ -19,7 +25,6 @@ import {
 } from '@/lib/propulsion-contracts'
 import {
   computeThrustResult,
-  suggestPropForMotor,
 } from '@/lib/propulsion-physics'
 import { estimateFlightTimeAt80DoD } from '@/lib/integration-contracts'
 import { MotorCard } from '@/components/calculators/propulsion/MotorCard'
@@ -104,21 +109,11 @@ export function PropulsionCalcContainer() {
   const totalMaxThrustG = useMemo(() => result.thrustG * integrationState.motorCount, [result.thrustG, integrationState.motorCount])
 
   useEffect(() => {
-    const fromIntegrationCells = integrationState.batteryCells
-    const fromIntegrationVpc = integrationState.batteryVoltageV / Math.max(1, fromIntegrationCells)
-    setState((prev) => {
-      if (
-        prev.batteryCells === fromIntegrationCells &&
-        Math.abs(prev.batteryVoltagePerCell - fromIntegrationVpc) < 0.01
-      ) {
-        return prev
-      }
-      return {
-        ...prev,
-        batteryCells: fromIntegrationCells,
-        batteryVoltagePerCell: round(fromIntegrationVpc, 2),
-      }
-    })
+    setState((prev) => syncBatteryFromIntegration(
+      prev,
+      integrationState.batteryCells,
+      integrationState.batteryVoltageV,
+    ))
   }, [integrationState.batteryCells, integrationState.batteryVoltageV, setState])
 
   useEffect(() => {
@@ -129,36 +124,11 @@ export function PropulsionCalcContainer() {
         batteryCapacityMah: integrationState.batteryCapacityMah,
         hoverCurrentA: result.currentA * integrationState.motorCount,
       }),
-    })
+    }, 'propulsion')
   }, [integrationPatch, integrationState.batteryCapacityMah, integrationState.motorCount, result.currentA, totalMaxThrustG])
 
   const updateMotor = useCallback((key: keyof MotorDraft, value: number) => {
-    setState((prev) => {
-      const nextMotor = mergeDraftNumber(prev.motor, key, value)
-      let nextProp = prev.prop
-
-      if (key === 'kv' && prev.autoSuggest) {
-        const suggestion = suggestPropForMotor({
-          kv: typeof value === 'number' ? value : nextMotor.kv,
-          voltageV,
-          availableProps: PROPS,
-        })
-        const suggestedProp = suggestion ? PROPS.find((prop) => prop.id === suggestion) : null
-        if (suggestedProp) {
-          nextProp = {
-            diameterIn: suggestedProp.diameterIn,
-            pitchIn: suggestedProp.pitchIn,
-            bladeCount: suggestedProp.blades,
-          }
-        }
-      }
-
-      return {
-        ...prev,
-        motor: nextMotor,
-        prop: nextProp,
-      }
-    })
+    setState((prev) => applyMotorDraftChange(prev, key, value, voltageV, PROPS))
   }, [setState, voltageV])
 
   const updateProp = useCallback((key: keyof PropDraft, value: number) => {
@@ -170,50 +140,15 @@ export function PropulsionCalcContainer() {
     setMotorResults(searchMotors(query))
   }, [setState])
 
-  function inferStatorDiameter(motor: MotorSpec): number {
-    const packed = `${motor.brand} ${motor.name}`.replace(/[^0-9]/g, '')
-    if (packed.length < 4) return DEFAULT_STATE.motor.statorDiameterMm
-    const statorMm = Number(packed.slice(0, 2))
-    if (Number.isFinite(statorMm) && statorMm >= 8 && statorMm <= 80) return statorMm
-    return DEFAULT_STATE.motor.statorDiameterMm
-  }
-
   const applyMotor = useCallback((motor: MotorSpec) => {
-    setState((prev) => {
-      const next = {
-        ...prev,
-        motorQuery: `${motor.brand} ${motor.name}`,
-        motor: {
-          ...prev.motor,
-          kv: motor.kv,
-          riOhms: motor.ri,
-          i0A: motor.i0,
-          escMaxAmps: motor.maxW ? Math.max(10, round(motor.maxW / Math.max(voltageV, 1), 0)) : prev.motor.escMaxAmps,
-          statorDiameterMm: inferStatorDiameter(motor),
-        },
-      }
-
-      if (!next.autoSuggest) return next
-
-      const suggestion = suggestPropForMotor({
-        kv: motor.kv,
-        voltageV,
-        availableProps: PROPS,
-      })
-      const suggestedProp = suggestion ? PROPS.find((prop) => prop.id === suggestion) : null
-      if (!suggestedProp) return next
-
-      return {
-        ...next,
-        prop: {
-          diameterIn: suggestedProp.diameterIn,
-          pitchIn: suggestedProp.pitchIn,
-          bladeCount: suggestedProp.blades,
-        },
-        propBrand: suggestedProp.brand,
-      }
-    })
-    integrationPatch({ motorWeightG: motor.weightG ?? integrationState.motorWeightG })
+    setState((prev) => applyCatalogMotor(
+      prev,
+      motor,
+      voltageV,
+      PROPS,
+      DEFAULT_STATE.motor.statorDiameterMm,
+    ))
+    integrationPatch({ motorWeightG: motor.weightG ?? integrationState.motorWeightG }, 'propulsion')
     setMotorResults([])
   }, [integrationPatch, integrationState.motorWeightG, setState, voltageV])
 
@@ -222,11 +157,7 @@ export function PropulsionCalcContainer() {
     if (!prop) return
     setState((prev) => ({
       ...prev,
-      prop: {
-        diameterIn: prop.diameterIn,
-        pitchIn: prop.pitchIn,
-        bladeCount: prop.blades,
-      },
+      prop: toPropDraft(prop),
     }))
   }, [setState])
 

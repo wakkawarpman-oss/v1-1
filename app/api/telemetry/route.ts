@@ -89,8 +89,15 @@ export async function POST(req: NextRequest) {
   const tempC            = sanitizeNum(body.tempC)
   const altM             = sanitizeNum(body.altM)
   const notes            = sanitizeText(body.notes)
+  const headerIdempotencyKey = sanitizeText(req.headers.get('x-idempotency-key'), 120)
+  const bodyIdempotencyKey = sanitizeText(body.idempotencyKey, 120)
+  const idempotencyKey = headerIdempotencyKey !== '—' ? headerIdempotencyKey : bodyIdempotencyKey
 
   const resendApiKey = process.env.RESEND_API_KEY
+  const telemetryTo = (process.env.TELEMETRY_TO ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
   const text = [
     `Тип: ${droneType}`,
     `Час польоту реальний: ${flightTimeActual} хв`,
@@ -107,6 +114,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
     }
 
+    if (!telemetryTo.length) {
+      console.error('[telemetry] Missing TELEMETRY_TO recipient list. Fallback 202 triggered.')
+      return NextResponse.json({ status: 'accepted', warning: 'delayed_processing' }, { status: 202 })
+    }
+
     const response = await fetchWithRetry(
       'https://api.resend.com/emails',
       {
@@ -114,10 +126,11 @@ export async function POST(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${resendApiKey}`,
           'Content-Type': 'application/json',
+          ...(idempotencyKey !== '—' ? { 'Idempotency-Key': idempotencyKey } : {}),
         },
         body: JSON.stringify({
           from: 'onboarding@resend.dev',
-          to: ['wakkawarpman@gmail.com'],
+          to: telemetryTo,
           subject: `[droneCalc] Телеметрія — ${droneType}`,
           text,
         }),

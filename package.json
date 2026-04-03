@@ -8,6 +8,7 @@
     "start": "next start",
     "start:test": "next start --hostname 127.0.0.1 --port 3000",
     "test": "vitest run",
+    "test:accuracy": "vitest run lib/__tests__/accuracy-gates.test.ts",
     "lint": "next lint",
     "test:smoke": "npm run build && playwright test --grep @smoke",
     "test:smoke:headed": "npm run build && playwright test --grep @smoke --headed"

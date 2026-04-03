@@ -1,6 +1,5 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { useState, type ReactNode } from 'react'
 import { useDashboardNav } from '@/hooks/useDashboardNav'
 import { ChevronDown, FlaskConical, Link2, Navigation, ShieldCheck } from 'lucide-react'
@@ -11,6 +10,8 @@ import {
   dashboardTabs,
   type DashboardTabDef,
 } from '@/components/calculators/dashboard/dashboard.registry'
+import { createSuiteComponentsMap } from '@/components/calculators/dashboard/suite-map'
+import { ACCURACY_BASELINE, type AccuracyGroup } from '@/lib/accuracy-baseline'
 
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -20,57 +21,13 @@ const panelLoading = () => (
   </div>
 )
 
-const suiteRegistry: Record<string, React.ComponentType> = {
-  mission: dynamic(() => import('@/components/calculators/MissionPlanningSuite').then((m) => m.MissionPlanningSuite), { loading: panelLoading }),
-  fieldops: dynamic(() => import('@/components/calculators/FieldOpsSuite').then((m) => m.FieldOpsSuite), { loading: panelLoading }),
-  dronedb: dynamic(() => import('@/components/calculators/DroneDatabase').then((m) => m.DroneDatabase), { loading: panelLoading }),
-  perfcalc: dynamic(() => import('@/components/calculators/PerfCalc').then((m) => m.PerfCalc), { loading: panelLoading }),
-  propcalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.PropCalcBasic), { loading: panelLoading }),
-  xcoptercalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.XcopterCalcBasic), { loading: panelLoading }),
-  cgcalc: dynamic(() => import('@/components/calculators/BasicCalcs').then((m) => m.CGCalcBasic), { loading: panelLoading }),
-  aeronav: dynamic(() => import('@/components/calculators/AeroNavigationSuite').then((m) => m.AeroNavigationSuite), { loading: panelLoading }),
-  engineering: dynamic(() => import('@/components/calculators/AviationEngineeringSuite').then((m) => m.AviationEngineeringSuite), { loading: panelLoading }),
-  avionics: dynamic(() => import('@/components/calculators/AvionicsElectronicsSuite').then((m) => m.AvionicsElectronicsSuite), { loading: panelLoading }),
-  geometry: dynamic(() => import('@/components/calculators/AircraftGeometrySuite').then((m) => m.AircraftGeometrySuite), { loading: panelLoading }),
-  environment: dynamic(() => import('@/components/calculators/ExternalFactorsSuite').then((m) => m.ExternalFactorsSuite), { loading: panelLoading }),
-  radiohorizon: dynamic(() => import('@/components/calculators/RadioHorizonSuite').then((m) => m.RadioHorizonSuite), { loading: panelLoading }),
-  coords: dynamic(() => import('@/components/calculators/CoordinateSystemsSuite').then((m) => m.CoordinateSystemsSuite), { loading: panelLoading }),
-  frequency: dynamic(() => import('@/components/calculators/FrequencyToolsSuite').then((m) => m.FrequencyToolsSuite), { loading: panelLoading }),
-  soldering: dynamic(() => import('@/components/calculators/SolderingSuite').then((m) => m.SolderingSuite), { loading: panelLoading }),
-  dronetools: dynamic(() => import('@/components/calculators/DroneEngineerToolset').then((m) => m.DroneEngineerToolset), { loading: panelLoading }),
-  ballistics: dynamic(() => import('@/components/calculators/BallisticsSuite').then((m) => m.BallisticsSuite), { loading: panelLoading }),
-  optics: dynamic(() => import('@/components/calculators/OpticsSuite').then((m) => m.OpticsSuite), { loading: panelLoading }),
-  battery: dynamic(() => import('@/components/calculators/BatteryPackSuite').then((m) => m.BatteryPackSuite), { loading: panelLoading }),
-  ew: dynamic(() => import('@/components/calculators/EwJammingSuite').then((m) => m.EwJammingSuite), { loading: panelLoading }),
-  windprofile: dynamic(() => import('@/components/calculators/WindProfileSuite').then((m) => m.WindProfileSuite), { loading: panelLoading }),
-  thermalcooling: dynamic(() => import('@/components/calculators/ThermalCoolingSuite').then((m) => m.ThermalCoolingSuite), { loading: panelLoading }),
-  acoustic: dynamic(() => import('@/components/calculators/AcousticSuite').then((m) => m.AcousticSuite), { loading: panelLoading }),
-  slipstream: dynamic(() => import('@/components/calculators/SlipstreamSuite').then((m) => m.SlipstreamSuite), { loading: panelLoading }),
-}
+const suiteRegistry = createSuiteComponentsMap(panelLoading)
 
 // ── FAQ accordion ─────────────────────────────────────────────────────────────
 
-type AccuracyRow = { group: 'A' | 'B' | 'C' | 'D'; metric: string; accuracy: string; basis: string }
+const ACCURACY_TABLE = ACCURACY_BASELINE
 
-const ACCURACY_TABLE: AccuracyRow[] = [
-  { group: 'A', metric: 'Щільність повітря',             accuracy: '±0.3%',   basis: 'ISA (ICAO Doc 7488) аналітичні формули' },
-  { group: 'A', metric: 'Радіогоризонт',                 accuracy: '±2–3%',   basis: 'Геометрія (ITU-R P.526), k-factor 4/3' },
-  { group: 'A', metric: 'Напруга під навантаженням',     accuracy: '±2%',     basis: 'Peukert + V-sag (Rint model), 17 еталонів' },
-  { group: 'A', metric: 'Статична тяга (CT відомий)',    accuracy: '±3–5%',   basis: 'CT = T/ρn²D⁴, AIAA 2012, UIUC OLS' },
-  { group: 'A', metric: 'Швидкість зриву (airfoil-db)',  accuracy: '±3–5%',   basis: '3 airfoil-db cd0/oswald, UIUC/NACA Re-полари' },
-  { group: 'A', metric: 'FSPL / бюджет лінку',          accuracy: '±1–2%',   basis: 'Friis (1946), дБ-модель LOS' },
-  { group: 'B', metric: 'Ендюранс мультиротора',         accuracy: '±7–10%',  basis: 'Altmann motor model + Peukert Kp, 80 моторів' },
-  { group: 'B', metric: 'Потужність приводу',            accuracy: '±5–10%',  basis: 'back-EMF + advance ratio, η_esc ≈ 0.92' },
-  { group: 'B', metric: 'Ендюранс фіксованого крила',   accuracy: '±8–12%',  basis: 'Бреге-Доналдсон, спрощений CD(CL)' },
-  { group: 'B', metric: 'GSD / охоплення камери',       accuracy: '±5%',     basis: 'Thin lens, сенсор-пресети Sony/DJI/custom' },
-  { group: 'C', metric: 'Аеродинамічний опір CD₀',      accuracy: '±15–25%', basis: 'Wetted-area методика, без CFD' },
-  { group: 'C', metric: 'FPV тяга в польоті',           accuracy: '±15–20%', basis: 'CT(J) з prop-db, 33 пропелери; без Mach-корекції' },
-  { group: 'C', metric: 'Акустичний OASPL',             accuracy: '±3–6 дБ', basis: 'Gutin-Lighthill, без турбулентного шуму' },
-  { group: 'D', metric: 'Температура ESC',              accuracy: '±30–50%', basis: 'Теплова ємність без реальної конвекції' },
-  { group: 'D', metric: 'CG зі складним компонуванням', accuracy: '±20–40%', basis: 'Спрощена 3-масова модель' },
-]
-
-const GROUP_COLORS: Record<AccuracyRow['group'], string> = {
+const GROUP_COLORS: Record<AccuracyGroup, string> = {
   A: 'bg-ecalc-green/20 border-ecalc-green/40 text-ecalc-green',
   B: 'bg-amber-500/20 border-amber-500/40 text-amber-400',
   C: 'bg-ecalc-orange/20 border-ecalc-orange/40 text-ecalc-orange',

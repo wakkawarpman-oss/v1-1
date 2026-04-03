@@ -231,7 +231,7 @@ export function BatteryBuilderContainer({ onPackBuilt }: { onPackBuilt: (capacit
           batteryCapacityMah: nextResult.capacityAh * 1000,
           hoverCurrentA: integration.state.hoverCurrentA,
         }),
-      })
+      }, 'battery')
     }
   }
 

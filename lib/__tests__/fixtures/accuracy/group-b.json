@@ -1,0 +1,32 @@
+{
+  "group": "B",
+  "description": "Operational metrics with moderate uncertainty",
+  "policy": {
+    "gate": "soft-report",
+    "warnAbovePct": 10,
+    "failAbovePct": 15
+  },
+  "cases": [
+    {
+      "id": "multirotor-endurance-baseline",
+      "metric": "Ендюранс мультиротора",
+      "module": "mission-planning",
+      "function": "missionEndurance",
+      "input": {
+        "batteryMah": 5000,
+        "avgCurrentA": 20,
+        "speedKmh": 60,
+        "usablePct": 80,
+        "reservePct": 20
+      },
+      "expected": {
+        "value": 12,
+        "unit": "min"
+      },
+      "tolerance": {
+        "type": "percent",
+        "value": 10
+      }
+    }
+  ]
+}

@@ -25,6 +25,56 @@ export type IntegrationSummary = {
   warning: string | null
 }
 
+export type IntegrationOwnerId =
+  | 'battery'
+  | 'propulsion'
+  | 'mission'
+  | 'airframe'
+  | 'system'
+
+export type IntegrationField = keyof IntegrationState
+
+export const FIELD_OWNERS: Record<IntegrationField, IntegrationOwnerId> = {
+  frameWeightG: 'airframe',
+  batteryCellWeightG: 'battery',
+  batteryCells: 'battery',
+  batteryCapacityMah: 'battery',
+  batteryVoltageV: 'battery',
+  motorWeightG: 'propulsion',
+  motorCount: 'airframe',
+  payloadG: 'airframe',
+  maxThrustG: 'propulsion',
+  hoverCurrentA: 'propulsion',
+  flightTime80Min: 'propulsion',
+  updatedAt: 'system',
+}
+
+export function filterPatchByOwner(
+  patch: Partial<IntegrationState>,
+  ownerId: IntegrationOwnerId,
+): Partial<IntegrationState> {
+  const next: Partial<IntegrationState> = {}
+
+  for (const [key, value] of Object.entries(patch)) {
+    const field = key as IntegrationField
+    const fieldOwner = FIELD_OWNERS[field]
+    if (!fieldOwner) continue
+
+    if (fieldOwner !== ownerId) {
+      if (field !== 'updatedAt') {
+        console.warn(
+          `[integration-ownership] owner '${ownerId}' attempted to patch '${field}', owned by '${fieldOwner}'.`,
+        )
+      }
+      continue
+    }
+
+    next[field] = value
+  }
+
+  return next
+}
+
 export const INTEGRATION_DEFAULTS: IntegrationState = {
   frameWeightG: 900,
   batteryCellWeightG: 65,

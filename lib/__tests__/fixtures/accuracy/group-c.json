@@ -1,0 +1,28 @@
+{
+  "group": "C",
+  "description": "Approximate engineering models (report-first)",
+  "policy": {
+    "gate": "soft-report",
+    "warnAbovePct": 20,
+    "failAbovePct": 30
+  },
+  "cases": [
+    {
+      "id": "oswald-ar-10",
+      "metric": "Коефіцієнт Освальда",
+      "module": "aero",
+      "function": "estimateOswald",
+      "input": {
+        "ar": 10
+      },
+      "expected": {
+        "value": 0.756,
+        "unit": "coef"
+      },
+      "tolerance": {
+        "type": "percent",
+        "value": 5
+      }
+    }
+  ]
+}

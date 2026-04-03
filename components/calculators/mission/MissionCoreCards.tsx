@@ -8,6 +8,12 @@ import { Field, formatToolNumber, ResultBox, ToolCard } from '@/components/calcu
 import { usePersistedState } from '@/hooks/usePersistedState'
 import { useIntegrationState } from '@/hooks/useIntegrationState'
 import {
+  syncBatteryAndAvgCurrent,
+  syncBatteryAndHover,
+  syncBatteryOnly,
+  syncPnrFromFlightTime,
+} from '@/lib/domain/mission/integration-sync'
+import {
   missionEndurance,
   routeBatteryBudget,
   tacticalRadius,
@@ -37,11 +43,7 @@ export function PNRCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    if (integration.state.flightTime80Min <= 0) return
-    setState((prev) => {
-      if (Math.abs(prev.totalEnduranceMin - integration.state.flightTime80Min) < 0.2) return prev
-      return { ...prev, totalEnduranceMin: integration.state.flightTime80Min }
-    })
+    setState((prev) => syncPnrFromFlightTime(prev, integration.state.flightTime80Min))
   }, [integration.state.flightTime80Min, setState])
 
   function calculate() {
@@ -93,15 +95,11 @@ export function EnduranceCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    setEndState((prev) => {
-      const next = {
-        ...prev,
-        batteryMah: integration.state.batteryCapacityMah,
-        avgCurrentA: integration.state.hoverCurrentA,
-      }
-      if (next.batteryMah === prev.batteryMah && Math.abs(next.avgCurrentA - prev.avgCurrentA) < 0.05) return prev
-      return next
-    })
+    setEndState((prev) => syncBatteryAndAvgCurrent(
+      prev,
+      integration.state.batteryCapacityMah,
+      integration.state.hoverCurrentA,
+    ))
   }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setEndState])
 
   return (
@@ -151,13 +149,7 @@ export function RouteBatteryBudgetCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    setRouteState((prev) => {
-      const next = {
-        ...prev,
-        batteryMah: integration.state.batteryCapacityMah,
-      }
-      return next.batteryMah === prev.batteryMah ? prev : next
-    })
+    setRouteState((prev) => syncBatteryOnly(prev, integration.state.batteryCapacityMah))
   }, [integration.state.batteryCapacityMah, setRouteState])
 
   return (
@@ -219,20 +211,11 @@ export function TacticalRadiusCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    setTacState((prev) => {
-      const next = {
-        ...prev,
-        batteryMah: integration.state.batteryCapacityMah,
-        hoverCurrentA: integration.state.hoverCurrentA,
-      }
-      if (
-        next.batteryMah === prev.batteryMah &&
-        Math.abs(next.hoverCurrentA - prev.hoverCurrentA) < 0.05
-      ) {
-        return prev
-      }
-      return next
-    })
+    setTacState((prev) => syncBatteryAndHover(
+      prev,
+      integration.state.batteryCapacityMah,
+      integration.state.hoverCurrentA,
+    ))
   }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setTacState])
 
   return (

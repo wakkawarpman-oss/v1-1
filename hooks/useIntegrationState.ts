@@ -4,7 +4,10 @@ import { useCallback, useMemo } from 'react'
 import { usePersistedState } from '@/hooks/usePersistedState'
 import { atomicMerge } from '@/lib/atomic-merge'
 import {
+  FIELD_OWNERS,
   INTEGRATION_DEFAULTS,
+  filterPatchByOwner,
+  type IntegrationOwnerId,
   sanitizeIntegrationState,
   summarizeIntegration,
   type IntegrationState,
@@ -27,8 +30,16 @@ export function useIntegrationState() {
   const state = useMemo(() => sanitizeIntegrationState(rawState), [rawState])
   const summary = useMemo(() => summarizeIntegration(state), [state])
 
-  const patch = useCallback((next: Partial<IntegrationState>) => {
-    setRawState((prev) => atomicMerge(prev, { ...next, updatedAt: Date.now(), _ts: Date.now() }))
+  const patch = useCallback((next: Partial<IntegrationState>, ownerId: IntegrationOwnerId) => {
+    const ownedPatch = filterPatchByOwner(next, ownerId)
+    setRawState((prev) => atomicMerge(
+      prev,
+      { ...ownedPatch, _ts: Date.now() },
+      {
+        callerId: ownerId,
+        fieldOwners: FIELD_OWNERS,
+      },
+    ))
   }, [setRawState])
 
   return {

@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
+import {
+  createTelemetryIdempotencyKey,
+  enqueueTelemetryOutbox,
+  flushTelemetryOutbox,
+  type TelemetryPayload,
+} from '@/lib/telemetry-outbox'
 
-type State = 'idle' | 'sending' | 'done' | 'error'
+type State = 'idle' | 'sending' | 'done' | 'queued' | 'error'
 
 export function TelemetryForm() {
   const [droneType, setDroneType] = useState('multirotor')
@@ -18,25 +24,77 @@ export function TelemetryForm() {
   const [notes, setNotes] = useState('')
   const [state, setState] = useState<State>('idle')
 
+  const sendTelemetry = useCallback(async (data: TelemetryPayload): Promise<number> => {
+    const res = await fetch('/api/telemetry', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': data.idempotencyKey,
+      },
+      body: JSON.stringify(data),
+    })
+
+    return res.status
+  }, [])
+
+  const flushOutbox = useCallback(async () => {
+    await flushTelemetryOutbox(sendTelemetry, 5)
+  }, [sendTelemetry])
+
+  useEffect(() => {
+    void flushOutbox()
+    const intervalId = window.setInterval(() => {
+      void flushOutbox()
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [flushOutbox])
+
   async function submit() {
+    const payload: TelemetryPayload = {
+      idempotencyKey: createTelemetryIdempotencyKey(),
+      droneType,
+      flightTimeActual,
+      flightTimeCalc,
+      wind,
+      tempC,
+      altM,
+      notes,
+    }
+
     setState('sending')
     try {
-      const res = await fetch('/api/telemetry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ droneType, flightTimeActual, flightTimeCalc, wind, tempC, altM, notes }),
-      })
-      setState(res.ok ? 'done' : 'error')
-    } catch {
+      const status = await sendTelemetry(payload)
+      if (status >= 200 && status < 300 && status !== 202) {
+        setState('done')
+        return
+      }
+
+      if (status === 202 || status === 429 || status >= 500) {
+        enqueueTelemetryOutbox(payload)
+        setState('queued')
+        return
+      }
+
       setState('error')
+    } catch {
+      enqueueTelemetryOutbox(payload)
+      setState('queued')
     }
   }
 
-  if (state === 'done') {
+  if (state === 'done' || state === 'queued') {
     return (
       <Card>
         <CardContent className="py-6 text-center text-sm text-ecalc-green">
           ✓ Дякуємо — дані отримано і будуть використані для калібрування моделей.
+          {state === 'queued' && (
+            <div className="mt-2 text-xs text-ecalc-muted">
+              Тимчасові проблеми з доставкою: записано в локальну чергу, повторна відправка виконується автоматично.
+            </div>
+          )}
         </CardContent>
       </Card>
     )

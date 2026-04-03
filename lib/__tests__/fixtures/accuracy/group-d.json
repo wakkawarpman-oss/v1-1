@@ -1,0 +1,29 @@
+{
+  "group": "D",
+  "description": "Low-confidence heuristic models (advisory only)",
+  "policy": {
+    "gate": "advisory",
+    "warnAbovePct": 40,
+    "failAbovePct": 60
+  },
+  "cases": [
+    {
+      "id": "esc-temperature-heuristic",
+      "metric": "Температура ESC",
+      "module": "avionics-electronics",
+      "function": "tempRise",
+      "input": {
+        "powerLossW": 6.4,
+        "thermalResistanceCPerW": 18
+      },
+      "expected": {
+        "value": 115.2,
+        "unit": "C"
+      },
+      "tolerance": {
+        "type": "percent",
+        "value": 50
+      }
+    }
+  ]
+}

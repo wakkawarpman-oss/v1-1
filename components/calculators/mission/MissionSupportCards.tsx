@@ -8,6 +8,10 @@ import { Field, formatToolNumber, ResultBox, ToolCard } from '@/components/calcu
 import { usePersistedState } from '@/hooks/usePersistedState'
 import { useIntegrationState } from '@/hooks/useIntegrationState'
 import {
+  syncBatteryAndHover,
+  syncTotalAndCurrent,
+} from '@/lib/domain/mission/integration-sync'
+import {
   timeOnTarget,
   batteryRemainingEst,
   loiterBudgetAtTarget,
@@ -64,15 +68,11 @@ export function BatteryRemainingCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    setRemState((prev) => {
-      const next = {
-        ...prev,
-        totalMah: integration.state.batteryCapacityMah,
-        avgCurrentA: integration.state.hoverCurrentA,
-      }
-      if (next.totalMah === prev.totalMah && Math.abs(next.avgCurrentA - prev.avgCurrentA) < 0.05) return prev
-      return next
-    })
+    setRemState((prev) => syncTotalAndCurrent(
+      prev,
+      integration.state.batteryCapacityMah,
+      integration.state.hoverCurrentA,
+    ))
   }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setRemState])
 
   return (
@@ -134,20 +134,11 @@ export function LoiterBudgetCard() {
   const integration = useIntegrationState()
 
   useEffect(() => {
-    setLoiterState((prev) => {
-      const next = {
-        ...prev,
-        batteryMah: integration.state.batteryCapacityMah,
-        hoverCurrentA: integration.state.hoverCurrentA,
-      }
-      if (
-        next.batteryMah === prev.batteryMah &&
-        Math.abs(next.hoverCurrentA - prev.hoverCurrentA) < 0.05
-      ) {
-        return prev
-      }
-      return next
-    })
+    setLoiterState((prev) => syncBatteryAndHover(
+      prev,
+      integration.state.batteryCapacityMah,
+      integration.state.hoverCurrentA,
+    ))
   }, [integration.state.batteryCapacityMah, integration.state.hoverCurrentA, setLoiterState])
 
   return (
